@@ -1,0 +1,182 @@
+---
+title: "STATS 744: Homework 2"
+author: "Steve Cygu"
+date: "`r format(Sys.time(), '%d %B %Y ')`"
+output: html_document
+#  tufte::tufte_html:
+#     pandoc_args: ["--dpi", "300"]
+---
+
+
+
+**Write a short statement (a few sentences) that explains what question you think the graphic is trying to answer, or what pattern it’s trying to display**
+
+- The graph is trying to display the trends in reported cases of various diseases in the US, before and after the respective vaccines were introduced, from 1945 to 2015. In particular, the graph is showing how the number of reported cases have managed to "decrease" after the introduction of the vaccine(s) for the respective diseases.
+
+
+```{R opts}
+
+# Set global options
+knitr::opts_chunk$set(echo = TRUE
+   , warning = FALSE
+   , message = FALSE
+   , fig.width = 10
+   , fig.height = 8
+   , results = "asis")
+options(width = 12)
+
+## Install or load required packages
+pkgs <- c("MASS", "ggplot2"
+	, "readr", "DT"
+	, "data.table", "dplyr"
+	, "tibble", "splines"
+	, "directlabels", "scales"
+	, "colorspace"
+)
+if (!"pacman" %in% installed.packages()[,1]){
+	install.packages("pacman")
+}
+pacman::p_load(pkgs, install = TRUE, character.only = TRUE)
+
+theme_set(theme_bw() + 
+	theme(panel.spacing=grid::unit(0,"lines"))) 
+```
+## Downloading data and some checks
+
+The script below will, if data doesn't exist in the local directory, automatically downlad the data and load it, otherwise load it.
+
+```{R download_df}
+
+## ---- Create Output folder ----
+
+dirs <- list.dirs(".")
+dirname <- "HW2"
+if (length(dirs)>1 & sum(grepl(dirname, dirs, ignore.cas = TRUE))==0){
+	dir.create(paste0("./", dirname))
+}
+
+#### ---- Downloading the data ----
+
+# The code below will automatically download the data from the specified url
+
+## Download the datasets and the labels
+df_url <- "https://bbolker.github.io/stat744/data/vaccine_data_online.csv"
+
+# Check if the dataset already exist
+pattern <- "vaccine_data" # How is the dataset named in the computer?
+if(length(list.files("."))>0 & sum(grepl(pattern, list.files("."), ignore.case = TRUE))==1){
+	df_name <- grep(pattern, list.files(), value = T)
+	print("Reading dataset from your computer... \n")
+	working_df <- read.csv(df_name)
+	cat(df_name, " dataset already saved!!! We'll proceed to analysis.", "\n")
+} else {
+	# Download data
+	cat("Dowloading dataset from ", df_url, "\n")
+	vaccine_df <- read_csv(df_url)
+	write.csv(vaccine_df, "vaccine_data.csv", row.names = FALSE)
+	working_df <- vaccine_df
+	cat(pattern
+		, " didn't exist!!! We've downloaded data from the url "
+		, df_url, "\n Dataset dim: "
+		, dim(vaccine_df)
+	)
+}
+print(getwd())
+```
+
+The table below summarizes the number, `no_miss` (and also expressed as proportions, `prop_miss`)  of missing cases in each of the variables. For this exploration, we are only interested `cases`, `disease` and `year`.
+
+```{R missingness}
+miss_df <- (sapply(working_df, function(x){sum(is.na(x) | x=="")})
+	%>% data.frame()
+	%>% rownames_to_column("variables")
+	%>% setnames(c("."), c("no_miss"))
+	%>% mutate(`prop_miss (%)` = round(no_miss * 100/nrow(working_df), 2))
+	%>% datatable(rownames = FALSE)
+)
+miss_df
+```
+
+We calculate the proportion of reported cases per year per disease. Also, extract the reported cases at the time when vaccine was introduced.
+```{R}
+# Create vaccine variable and also calculate the proportion of cases per year
+working_df <- (working_df
+	%>% mutate(vac = ifelse(vaccine != "FALSE", cases, NA)
+		, cases = ifelse(cases > 0, cases, NA)
+		, vaccine = ifelse(vaccine == "FALSE" | cases <= 0, NA, as.character(vaccine))
+		, disease = reorder(disease, cases, FUN = function(x) -x[1])
+	)
+	%>% group_by(year)
+	%>% mutate(prop_cases = round(cases/sum(cases), 2))
+)
+```
+
+## Data vizualisation
+
+**Explain (in a few sentences) why your graph or graphs answer the question better than the original grap**
+
+- Although the original graph can also show the differences in number of reported cases over time, the viewer has to visually compare (switch between the bubbles) the sizes of the bubbles (of which, some overlayed) to conceptualise the trends. On the contrary,  the line graph below (first graph) easily provides the reader with the general trends in the number of cases over time by simply comparing the positions along `x` and `y` cordinates. The second figure (below), provides a better way to compare the cases per disease because they (diseases) are sorted by maximun number of cases reported, thus the reader can easily scan and compare the trend through time.
+- In addition, the vaccines (represented by shapes) in our graphs are scaled proportional to the number of cases reported per disease within a specific year (this is the same for the data points in the second plot). Hence the reader can easily compare the number of cases per year for different diseases by just looking at the sizes of the dots and also identify, through time, when the vaccine was introduced.
+
+```{R datviz_plot1}
+vaccine_plot1 <- (ggplot(working_df, aes(x = year, y = cases, colour = disease, group = disease))
+	+ geom_line(aes(lty = disease))
+	+ geom_point(aes(y = vac, size = prop_cases, group = vaccine, shape = vaccine))
+	+ scale_shape_manual(values=1:nlevels(as.factor(working_df$vaccine)), na.translate = FALSE)
+	+ expand_limits(x = c(1945, 2020), y = c(10^(-2), 10^7))
+	+ scale_x_continuous(breaks = seq(1945, 2015, 10))
+	+ scale_y_log10(breaks = trans_breaks("log10", function(x) 10^x)
+		, labels = trans_format("log10", math_format(10^.x))
+	)
+	+ scale_colour_discrete_qualitative()
+	+ labs(x = "Years"
+		, y = "Reported cases"
+		, title = "Number of reported cases of various diseases in the US from 1945 to 2015"
+		, shape = "Vaccines"
+	)
+	+ guides(color = FALSE
+		, size = FALSE
+		, lty = FALSE
+		, shape = guide_legend(nrow = 8, byrow = TRUE)
+	)
+	+ theme(legend.position="bottom"
+		, legend.direction = "vertical"
+		, legend.text = element_text(size = 7.5)
+		, legend.key.size = unit(0.1, "cm")
+		, plot.title = element_text(hjust = 0.5)
+	)
+	+ geom_dl(aes(label = disease), method = "last.bumpup", cex = 1)
+)
+print(vaccine_plot1)
+```
+
+```{R datviz_plot2}
+vaccine_plot2 <- (ggplot(data = working_df, aes(x = year, y = cases))
+	+ geom_point(aes(size = prop_cases), alpha = 0.3)
+	+ scale_size_area()
+	+ geom_point(aes(y = vac, size = prop_cases, group = vaccine, shape = vaccine))
+	+ scale_shape_manual(values=1:nlevels(as.factor(working_df$vaccine)), na.translate = FALSE)
+	+ scale_x_continuous(lim = c(1945, 2015), breaks = seq(1950, 2015, 10))
+	+ scale_y_log10(breaks = trans_breaks("log10", function(x) 10^x)
+		, labels = trans_format("log10", math_format(10^.x))
+	)
+	+ geom_smooth(method=rlm, formula=y~ns(x,4), size = 1)
+	+ facet_wrap(facets = vars(disease))
+	+ labs(x = "Years"
+		, y = "Reported cases"
+		, title = "Number of reported cases of various diseases in the US from 1945 to 2015"
+		, size = "Proportions"
+		, shape = "Vaccines"
+	)
+	+ guides(color = FALSE
+		, shape = guide_legend(nrow = 8, byrow = TRUE)
+	)
+	+ theme(legend.position="bottom"
+		, legend.direction = "vertical"
+		, legend.text = element_text(size = 7.3)
+		, legend.key.size = unit(0.1, "cm")
+		, plot.title = element_text(hjust = 0.5)
+	)
+)
+print(vaccine_plot2)
+```
