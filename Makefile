@@ -35,6 +35,10 @@ move_output:
 clean: 
 	rm -f *Rout.*  *.Rout .*.RData .*.Rout.* .*.wrapR.* .*.Rlog *.RData *.wrapR.* *.Rlog *.rdeps *.rda .*.rdeps .*.rda *.vrb *.toc *.out *.nav *.snm *.log *.aux
 
+Ignore += *.rda
+Ignore += *.Rhistory
+Ignore += *.pdf *.html *.csv *.vrb *.png *.Rexit
+
 ######################################################################
 
 ### Makestuff
