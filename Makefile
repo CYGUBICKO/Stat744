@@ -8,7 +8,6 @@ current: target
 ms = makestuff
 
 Sources += Makefile README.md
-Sources += HW2
 
 ## Used by Steve to link data to right place
 Ignore += local.mk
