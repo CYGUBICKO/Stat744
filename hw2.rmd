@@ -1,10 +1,10 @@
 ---
-title: "STATS 744: Homework 2"
+title: 'STATS 744: Homework 2'
 author: "Steve Cygu"
 date: "`r format(Sys.time(), '%d %B %Y ')`"
-output: html_document
-#  tufte::tufte_html:
-#     pandoc_args: ["--dpi", "300"]
+output:
+  html_document: default
+  pdf_document: default
 ---
 
 
