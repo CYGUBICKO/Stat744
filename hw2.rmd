@@ -11,7 +11,7 @@ output:
 
 **Write a short statement (a few sentences) that explains what question you think the graphic is trying to answer, or what pattern it’s trying to display**
 
-- The graph is trying to display the trends in reported cases of various diseases in the US, before and after the respective vaccines were introduced, from 1945 to 2015. In particular, the graph is showing how the number of reported cases have managed to "decrease" after the introduction of the vaccine(s) for the respective diseases.
+- The graph is trying to display the trends in reported cases of various diseases in the US, before and after the respective vaccines were introduced, from 1945 to 2015. In particular, the graph is showing how the number of reported cases have managed to "decrease" after the introduction of the vaccine(s) for the respective diseases. *BMB: good, but not sure why you need quotation marks around 'decrease'*
 
 
 ```{R opts}
@@ -32,7 +32,9 @@ pkgs <- c("MASS", "ggplot2"
 	, "tibble", "splines"
 	, "directlabels", "scales"
 	, "colorspace"
-)
+          )
+## BMB: this is questionable.  Not everyone wants packages
+## installed automatically.
 if (!"pacman" %in% installed.packages()[,1]){
 	install.packages("pacman")
 }
@@ -43,7 +45,7 @@ theme_set(theme_bw() +
 ```
 ## Downloading data and some checks
 
-The script below will, if data doesn't exist in the local directory, automatically downlad the data and load it, otherwise load it.
+The script below will, if data doesn't exist in the local directory, automatically download the data and load it, otherwise load it.
 
 ```{R download_df}
 
@@ -71,7 +73,7 @@ if(length(list.files("."))>0 & sum(grepl(pattern, list.files("."), ignore.case =
 	cat(df_name, " dataset already saved!!! We'll proceed to analysis.", "\n")
 } else {
 	# Download data
-	cat("Dowloading dataset from ", df_url, "\n")
+	cat("Downloading dataset from ", df_url, "\n")
 	vaccine_df <- read_csv(df_url)
 	write.csv(vaccine_df, "vaccine_data.csv", row.names = FALSE)
 	working_df <- vaccine_df
@@ -111,11 +113,11 @@ working_df <- (working_df
 )
 ```
 
-## Data vizualisation
+## Data visualization
 
-**Explain (in a few sentences) why your graph or graphs answer the question better than the original grap**
+**Explain (in a few sentences) why your graph or graphs answer the question better than the original graph**
 
-- Although the original graph can also show the differences in number of reported cases over time, the viewer has to visually compare (switch between the bubbles) the sizes of the bubbles (of which, some overlayed) to conceptualise the trends. On the contrary,  the line graph below (first graph) easily provides the reader with the general trends in the number of cases over time by simply comparing the positions along `x` and `y` cordinates. The second figure (below), provides a better way to compare the cases per disease because they (diseases) are sorted by maximun number of cases reported, thus the reader can easily scan and compare the trend through time.
+- Although the original graph can also show the differences in number of reported cases over time, the viewer has to visually compare (switch between the bubbles) the sizes of the bubbles (of which, some overlaid) to conceptualise the trends. On the contrary,  the line graph below (first graph) easily provides the reader with the general trends in the number of cases over time by simply comparing the positions along `x` and `y` coordinates. The second figure (below), provides a better way to compare the cases per disease because they (diseases) are sorted by the maximum number of cases reported; thus the reader can easily scan and compare the trend through time.
 - In addition, the vaccines (represented by shapes) in our graphs are scaled proportional to the number of cases reported per disease within a specific year (this is the same for the data points in the second plot). Hence the reader can easily compare the number of cases per year for different diseases by just looking at the sizes of the dots and also identify, through time, when the vaccine was introduced.
 
 ```{R datviz_plot1}
@@ -150,6 +152,12 @@ vaccine_plot1 <- (ggplot(working_df, aes(x = year, y = cases, colour = disease, 
 print(vaccine_plot1)
 ```
 
+BMB: maybe tweak x-axis labels so they don't go down to 10^{-2}?
+Do you need all the extra space at the bottom?
+Maybe replace "10^0" with 1 ?
+Labels are a little awkward here. Overall nice graph though.
+
+
 ```{R datviz_plot2}
 vaccine_plot2 <- (ggplot(data = working_df, aes(x = year, y = cases))
 	+ geom_point(aes(size = prop_cases), alpha = 0.3)
@@ -180,3 +188,5 @@ vaccine_plot2 <- (ggplot(data = working_df, aes(x = year, y = cases))
 )
 print(vaccine_plot2)
 ```
+
+BMB: thanks for ordering sensibly. Smoothed lines and deviations from smooth trends are interesting. Nice workflow (not that I'm surprised). Score: 2.25
