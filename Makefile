@@ -20,14 +20,16 @@ Ignore += class_livecodes
 
 ######################################################################
 
-## Assignments:
-## Homework 2: https://mac-theobio.github.io/DataViz/assignments.html
+## Assignments: https://mac-theobio.github.io/DataViz/assignments.html
 
+## Homework 2
 hw2.html: hw2.rmd
 # vaccine_data.csv: hw2.html;
 
-## Copy the final output to the Output dir
+## Homework 3
+hw3.html: hw3.rmd
 
+## Copy the final output to the Output dir
 move_output:
 	make hw2.html
 	cp hw2.html HW2/

@@ -1,0 +1,85 @@
+---
+title: 'STATS 744: Homework 3'
+author: "Steve Cygu"
+date: "`r format(Sys.time(), '%d %B %Y ')`"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+
+
+```{R opts}
+
+# Set global options
+knitr::opts_chunk$set(echo = TRUE
+   , warning = FALSE
+   , message = FALSE
+   , fig.width = 10
+   , fig.height = 8
+   , results = "asis")
+options(width = 12)
+
+## Install or load required packages
+
+library(tabulizer)
+
+library(ggplot2)
+theme_set(theme_bw() + 
+	theme(panel.spacing=grid::unit(0,"lines"))) 
+```
+## Downloading data and some checks
+
+The script below will, if data doesn't exist in the local directory, automatically download the data and load it, otherwise load it.
+
+```{R download_df}
+
+## ---- Create Output folder ----
+
+dirs <- list.dirs(".")
+dirname <- "HW3"
+if (length(dirs)>1 & sum(grepl(dirname, dirs, ignore.cas = TRUE))==0){
+	dir.create(paste0("./", dirname))
+}
+
+#### ---- Downloading the data ----
+
+# The code below will automatically download the tables from the specified paper (url)
+
+## Download the tables from the paper
+paper_url <- "https://onlinelibrary.wiley.com/doi/pdf/10.3322/caac.21551"
+
+# Check if the dataset already exist
+pattern <- "vaccine_data" # How is the dataset named in the computer?
+if(length(list.files("."))>0 & sum(grepl(pattern, list.files("."), ignore.case = TRUE))==1){
+	df_name <- grep(pattern, list.files(), value = T)
+	print("Reading dataset from your computer... \n")
+	working_df <- read.csv(df_name)
+	cat(df_name, " dataset already saved!!! We'll proceed to analysis.", "\n")
+} else {
+	# Download data
+	cat("Downloading dataset from ", df_url, "\n")
+	vaccine_df <- read_csv(df_url)
+	write.csv(vaccine_df, "vaccine_data.csv", row.names = FALSE)
+	working_df <- vaccine_df
+	cat(pattern
+		, " didn't exist!!! We've downloaded data from the url "
+		, df_url, "\n Dataset dim: "
+		, dim(vaccine_df)
+	)
+}
+```
+
+The table below summarizes the number, `no_miss` (and also expressed as proportions, `prop_miss`)  of missing cases in each of the variables. For this exploration, we are only interested `cases`, `disease` and `year`.
+
+```{R missingness}
+miss_df <- (sapply(working_df, function(x){sum(is.na(x) | x=="")})
+	%>% data.frame()
+	%>% rownames_to_column("variables")
+	%>% setnames(c("."), c("no_miss"))
+	%>% mutate(`prop_miss (%)` = round(no_miss * 100/nrow(working_df), 2))
+	%>% datatable(rownames = FALSE)
+)
+miss_df
+```
+
