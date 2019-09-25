@@ -9,7 +9,7 @@ output:
 
 
 
-```{R opts}
+```{R opts, warning = FALSE}
 
 # Set global options
 knitr::opts_chunk$set(echo = TRUE
@@ -23,6 +23,13 @@ options(width = 12)
 ## Install or load required packages
 
 library(tabulizer)
+
+library(data.table)
+library(DT)
+
+library(tibble)
+library(tidyr)
+library(dplyr)
 
 library(ggplot2)
 theme_set(theme_bw() + 
@@ -42,44 +49,62 @@ if (length(dirs)>1 & sum(grepl(dirname, dirs, ignore.cas = TRUE))==0){
 	dir.create(paste0("./", dirname))
 }
 
-#### ---- Downloading the data ----
+#### ---- Downloading the pdf file and extract the data ----
 
-# The code below will automatically download the tables from the specified paper (url)
+## Check if the paper exisits otherwise download and extract the table on pdf page 19
+paper_url <- "https://onlinelibrary.wiley.com/doi/pdfdirect/10.3322/caac.21551"
+paper_name <- "siegel2019.pdf"
 
-## Download the tables from the paper
-paper_url <- "https://onlinelibrary.wiley.com/doi/pdf/10.3322/caac.21551"
-
-# Check if the dataset already exist
-pattern <- "vaccine_data" # How is the dataset named in the computer?
-if(length(list.files("."))>0 & sum(grepl(pattern, list.files("."), ignore.case = TRUE))==1){
-	df_name <- grep(pattern, list.files(), value = T)
+if(length(list.files("."))>0 & sum(grepl(paper_name, list.files("."), ignore.case = TRUE))==1){
+	df_name <- grep(gsub("\\.pdf", "_data.csv", paper_name), list.files(), value = TRUE)
 	print("Reading dataset from your computer... \n")
 	working_df <- read.csv(df_name)
 	cat(df_name, " dataset already saved!!! We'll proceed to analysis.", "\n")
 } else {
-	# Download data
-	cat("Downloading dataset from ", df_url, "\n")
-	vaccine_df <- read_csv(df_url)
-	write.csv(vaccine_df, "vaccine_data.csv", row.names = FALSE)
-	working_df <- vaccine_df
-	cat(pattern
+	# Download paper and extract table 19
+	cat("Downloading paper from ", paper_url, " and then extracting table 19", "\n")
+	download.file(paper_url, paper_name, quiet = TRUE)
+	siegel2019_df <- extract_tables(paper_name, pages = 19, output = "data.frame")[[1]]
+	working_df <- siegel2019_df
+	cat(paper_name
 		, " didn't exist!!! We've downloaded data from the url "
-		, df_url, "\n Dataset dim: "
-		, dim(vaccine_df)
+		, paper_url, "\n Dataset dim: "
+		, dim(siegel2019_df)
 	)
 }
 ```
 
+### Data cleaning and formatting
+
+Define some useful functions
+
+```{R useful_functions}
+```
+
+```{R formart_data}
+working_df <- (working_df
+	%>% setnames(names(.), c("temp_labels", "temp_values"))
+	%>% filter(grepl("[A-z]", temp_labels) & !grepl("TABLE", temp_labels))
+	%>% mutate(category_labels = ifelse(temp_values == "", as.character(temp_labels), NA))
+	%>% fill(category_labels)
+	%>% filter(temp_values != "")
+	%>% datatable(rownames = FALSE)
+)
+#(?!.^hhid.$)(hhh_*|hha_*)
+working_df
+#write.csv(siegel2019_df, "siegel2019_data.csv", row.names = FALSE)
+````
+
 The table below summarizes the number, `no_miss` (and also expressed as proportions, `prop_miss`)  of missing cases in each of the variables. For this exploration, we are only interested `cases`, `disease` and `year`.
 
 ```{R missingness}
-miss_df <- (sapply(working_df, function(x){sum(is.na(x) | x=="")})
-	%>% data.frame()
-	%>% rownames_to_column("variables")
-	%>% setnames(c("."), c("no_miss"))
-	%>% mutate(`prop_miss (%)` = round(no_miss * 100/nrow(working_df), 2))
-	%>% datatable(rownames = FALSE)
-)
-miss_df
+#miss_df <- (sapply(working_df, function(x){sum(is.na(x) | x=="")})
+#	%>% data.frame()
+#	%>% rownames_to_column("variables")
+#	%>% setnames(c("."), c("no_miss"))
+#	%>% mutate(`prop_miss (%)` = round(no_miss * 100/nrow(working_df), 2))
+#	%>% datatable(rownames = FALSE)
+#)
+#miss_df
 ```
 
