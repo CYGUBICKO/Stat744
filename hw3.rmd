@@ -54,11 +54,13 @@ if (length(dirs)>1 & sum(grepl(dirname, dirs, ignore.cas = TRUE))==0){
 ## Check if the paper exisits otherwise download and extract the table on pdf page 19
 paper_url <- "https://onlinelibrary.wiley.com/doi/pdfdirect/10.3322/caac.21551"
 paper_name <- "siegel2019.pdf"
+dataset_name <- "siegel2019_data.csv"
 
-if(length(list.files("."))>0 & sum(grepl(paper_name, list.files("."), ignore.case = TRUE))==1){
-	df_name <- grep(gsub("\\.pdf", "_data.csv", paper_name), list.files(), value = TRUE)
+if(length(list.files("."))>0 & sum(grepl(dataset_name, list.files("."), ignore.case = TRUE))==1){
+	df_name <- grep(dataset_name, list.files(), value = TRUE)
 	print("Reading dataset from your computer... \n")
 	working_df <- read.csv(df_name)
+	downloaded = FALSE # Checked to make sure we only do cleaning once
 	cat(df_name, " dataset already saved!!! We'll proceed to analysis.", "\n")
 } else {
 	# Download paper and extract table 19
@@ -66,7 +68,8 @@ if(length(list.files("."))>0 & sum(grepl(paper_name, list.files("."), ignore.cas
 	download.file(paper_url, paper_name, quiet = TRUE)
 	siegel2019_df <- extract_tables(paper_name, pages = 19, output = "data.frame")[[1]]
 	working_df <- siegel2019_df
-	cat(paper_name
+	downloaded = TRUE 
+	cat(dataset_name
 		, " didn't exist!!! We've downloaded data from the url "
 		, paper_url, "\n Dataset dim: "
 		, dim(siegel2019_df)
@@ -79,32 +82,76 @@ if(length(list.files("."))>0 & sum(grepl(paper_name, list.files("."), ignore.cas
 Define some useful functions
 
 ```{R useful_functions}
+# Count the number of a given character for the combined column (temp_values)
+countFunc <- function(variable, cpattern){
+	nspaces <- sapply(regmatches(variable, gregexpr(cpattern, variable)), length)
+	return(nspaces + 1)
+}
+
+# Separate the combined values into different cells
+separateFunc <- function(df, variable, spattern, cpattern){
+	df <- (df
+		%>% setnames(variable, "temp_sep", skip = TRUE)
+		%>% mutate(nspaces = countFunc(temp_sep, cpattern))
+	)
+	nspacesmax <- max(pull(df, nspaces), rm.na = TRUE)
+	df <- (df
+		%>% select(-nspaces)
+		%>% separate(temp_sep
+			, into = paste0(variable, "_", 1:nspacesmax)
+			, sep = spattern
+			, remove = TRUE
+			, convert = TRUE
+		)
+		%>% setnames("temp_sep", variable, skip = TRUE)
+	)
+}
+
 ```
 
 ```{R formart_data}
-working_df <- (working_df
-	%>% setnames(names(.), c("temp_labels", "temp_values"))
-	%>% filter(grepl("[A-z]", temp_labels) & !grepl("TABLE", temp_labels))
-	%>% mutate(category_labels = ifelse(temp_values == "", as.character(temp_labels), NA))
-	%>% fill(category_labels)
-	%>% filter(temp_values != "")
-	%>% datatable(rownames = FALSE)
-)
-#(?!.^hhid.$)(hhh_*|hha_*)
-working_df
-#write.csv(siegel2019_df, "siegel2019_data.csv", row.names = FALSE)
+if (downloaded){
+	working_df <- (working_df
+		%>% setnames(names(.), c("temp_labels", "temp_values"))
+		%>% filter(grepl("[A-z]", temp_labels) & !grepl("TABLE", temp_labels))
+		%>% mutate(cancer_types = ifelse(temp_values == "", as.character(temp_labels), NA))
+		%>% fill(cancer_types)
+		%>% filter(temp_values != "")
+		%>% separateFunc(., "temp_values", spattern = " ", cpattern = "")
+		%>% separateFunc(., "temp_values_4", spattern = "-", cpattern = "-")
+		%>% separateFunc(., "temp_values_8", spattern = "-", cpattern = "-")
+		%>% select_if(~sum(!is.na(.)) > 0)
+		%>% mutate_at(grep("_[0-9]_[0-9]$", names(.), value = TRUE)
+			, function(x) as.numeric(gsub("\\(|\\)", "", x))
+		)
+		# Add the names in the pdf
+		%>% setnames(grep("^temp_", names(.), value = TRUE)
+			, c("categories"
+				, paste0(c("Poor", "Affluent", "Rate_Ratio", "lower", "upper"), ".1970_1974")
+				, paste0(c("Poor", "Affluent", "Rate_Ratio", "lower", "upper"), ".2012_2016")
+			)
+		)
+	)
+	write.csv(working_df, dataset_name, row.names = FALSE)
+}
 ````
 
-The table below summarizes the number, `no_miss` (and also expressed as proportions, `prop_miss`)  of missing cases in each of the variables. For this exploration, we are only interested `cases`, `disease` and `year`.
+Restructure the dataset to long format to extract years and for plotting
 
-```{R missingness}
-#miss_df <- (sapply(working_df, function(x){sum(is.na(x) | x=="")})
-#	%>% data.frame()
-#	%>% rownames_to_column("variables")
-#	%>% setnames(c("."), c("no_miss"))
-#	%>% mutate(`prop_miss (%)` = round(no_miss * 100/nrow(working_df), 2))
-#	%>% datatable(rownames = FALSE)
-#)
-#miss_df
+```{R data_restructure}
+working_df <- (working_df
+	%>% gather(labels, values, -c("categories", "cancer_types"))
+	%>% separate(labels, into = c("labels", "years"), sep = "\\.")
+	%>% mutate_at("years", function(x)gsub("_", "-", x))
+)
 ```
 
+
+```{R ploting1}
+plot1 <- (ggplot(working_df 
+	%>% filter(labels %in% c("Affluent", "Poor")), aes(years, values, colour = categories))
+	+ geom_point()
+	+ facet_wrap(~cancer_types)
+)
+print(plot1)
+```
