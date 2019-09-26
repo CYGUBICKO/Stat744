@@ -149,9 +149,9 @@ working_df <- (working_df
 
 ```{R ploting1}
 plot1 <- (ggplot(working_df 
-	%>% filter(labels %in% c("Affluent", "Poor")), aes(years, values, colour = categories))
-	+ geom_point()
-	+ facet_wrap(~cancer_types)
+	%>% filter(labels %in% c("Affluent", "Poor")), aes(years, values, fill = categories))
+	+ geom_bar(stat="identity")
+	+ facet_wrap(~cancer_types, scale = "free")
 )
 print(plot1)
 ```
