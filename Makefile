@@ -18,6 +18,8 @@ Ignore += local.mk
 Sources += $(wildcard *.R *.rmd *.tex)
 Sources += images HW2 HW3
 
+Ignore += class_livecodes
+
 ######################################################################
 
 ## Assignments: https://mac-theobio.github.io/DataViz/assignments.html
@@ -31,9 +33,8 @@ hw3.html: hw3.rmd
 
 ## Copy the final output to the Output dir
 move_output:
-	make hw2.html
-	make hw3.html
-	cp hw2.html HW2/
+	make hw2.html & cp hw2.html HW2/
+	make hw3.html & cp hw3.html HW3/
 
 clean: 
 	rm -f *Rout.*  *.Rout .*.RData .*.Rout.* .*.wrapR.* .*.Rlog *.RData *.wrapR.* *.Rlog *.rdeps *.rda .*.rdeps .*.rda *.vrb *.toc *.out *.nav *.snm *.log *.aux

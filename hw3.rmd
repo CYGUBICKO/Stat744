@@ -33,7 +33,6 @@ library(dplyr, warn.conflicts = FALSE)
 
 library(ggplot2, warn.conflicts = FALSE)
 library(gridExtra, warn.conflicts = FALSE)
-library(directlabels, warn.conflicts = FALSE)
 theme_set(theme_bw() + 
 	theme(panel.spacing=grid::unit(0,"lines"))) 
 ```
