@@ -144,14 +144,34 @@ working_df <- (working_df
 	%>% separate(labels, into = c("labels", "years"), sep = "\\.")
 	%>% mutate_at("years", function(x)gsub("_", "-", x))
 )
+datatable(working_df, rownames = FALSE)
 ```
 
 
-```{R ploting1}
+```{R plotting1}
+temp_df <- (working_df
+	%>% filter(grepl("lowe|upp|Rate", labels))
+	%>% spread(labels, values)
+	%>% filter(grepl("sex", categories, ignore.case = TRUE))
+	%>% mutate(cancer_types = reorder(cancer_types, Rate_Ratio, FUN = function(x) -x[1]))
+)
+ggplot(temp_df, aes(x=years, y=Rate_Ratio, group = 1)) +
+    geom_point(alpha=0.4) +
+    geom_errorbar(width=.1, aes(ymin=lower, ymax=upper), alpha = 0.4, color = "deepskyblue4") + 
+	 facet_wrap(~cancer_types, ncol = 2, scale = "free_y")  
+
+
+
+
+datatable(temp_df, rownames = FALSE)
+```
+
+
+```{R ploting2}
 plot1 <- (ggplot(working_df 
-	%>% filter(labels %in% c("Affluent", "Poor")), aes(years, values, fill = categories))
-	+ geom_bar(stat="identity")
-	+ facet_wrap(~cancer_types, scale = "free")
+%>% filter(labels %in% c("Affluent", "Poor")), aes(years, values, fill = categories))
++ geom_bar(stat="identity")
++ facet_wrap(~cancer_types, scale = "free")
 )
 print(plot1)
 ```
