@@ -15,26 +15,45 @@ output:
 knitr::opts_chunk$set(echo = TRUE
    , warning = FALSE
    , message = FALSE
-   , fig.width = 10
-   , fig.height = 8
+   , fig.width = 12
+   , fig.height = 10
    , results = "asis")
 options(width = 12)
 
 ## Install or load required packages
 
-library(tabulizer)
+library(tabulizer, warn.conflicts = FALSE)
 
-library(data.table)
-library(DT)
+library(data.table, warn.conflicts = FALSE)
+library(DT, warn.conflicts = FALSE)
 
-library(tibble)
-library(tidyr)
-library(dplyr)
+library(tibble, warn.conflicts = FALSE)
+library(tidyr, warn.conflicts = FALSE)
+library(dplyr, warn.conflicts = FALSE)
 
-library(ggplot2)
+library(ggplot2, warn.conflicts = FALSE)
+library(gridExtra, warn.conflicts = FALSE)
+library(directlabels, warn.conflicts = FALSE)
 theme_set(theme_bw() + 
 	theme(panel.spacing=grid::unit(0,"lines"))) 
 ```
+## Question 
+
+**Explain what features of the data you are trying to draw attention to, and what story you think your figures tell (or fail to tell).**
+
+- The explorations are based on Table 10 of [Siegel et. al](https://onlinelibrary.wiley.com/doi/pdfdirect/10.3322/caac.21551). The Tables shows the change in Cancer Mortality Rates by Count-Level Poverty, 1970 to 1974 Versus 2012 to 2016.
+
+> - Provided clear trends in the Mortality rates across the two year bands and a one-to-one comparison between the cancer types. 
+> - In addition, from the Table, the cancer types are sex and race specific. Hence, I provided distinctive graphs for Sex and Race.
+>- Plot two categeories of graphs: 
+
+> > - **Mortality rate graphs**: Rates are per 100,000 population and age adjusted to the 2000 US standard population. The first set of Figures show trends in Mortality rates among the poor and the affluent for all the cancer types.
+> > - **Rate ratio**: unrounded rate in poor counties divided by the corresponding unrounded rate in affluent counties: These are shown in second set of plots. The confidence interval bands are also added around the estimates.
+
+## The table extracted from [Siegel et. al](https://onlinelibrary.wiley.com/doi/pdfdirect/+ 10.3322/caac.21551).
+
+![](images/siegel2019.png)
+
 ## Downloading data and some checks
 
 The script below will, if data doesn't exist in the local directory, automatically download the data and load it, otherwise load it.
@@ -143,35 +162,123 @@ working_df <- (working_df
 	%>% gather(labels, values, -c("categories", "cancer_types"))
 	%>% separate(labels, into = c("labels", "years"), sep = "\\.")
 	%>% mutate_at("years", function(x)gsub("_", "-", x))
+	%>% mutate(grp_cat = ifelse(grepl("races|Black|White", categories), "Race", "Sex"))
 )
-datatable(working_df, rownames = FALSE)
-```
 
-
-```{R plotting1}
+# Temporary data for CI ploting
 temp_df <- (working_df
 	%>% filter(grepl("lowe|upp|Rate", labels))
 	%>% spread(labels, values)
-	%>% filter(grepl("sex", categories, ignore.case = TRUE))
 	%>% mutate(cancer_types = reorder(cancer_types, Rate_Ratio, FUN = function(x) -x[1]))
 )
-ggplot(temp_df, aes(x=years, y=Rate_Ratio, group = 1)) +
-    geom_point(alpha=0.4) +
-    geom_errorbar(width=.1, aes(ymin=lower, ymax=upper), alpha = 0.4, color = "deepskyblue4") + 
-	 facet_wrap(~cancer_types, ncol = 2, scale = "free_y")  
 
-
-
-
-datatable(temp_df, rownames = FALSE)
 ```
 
 
-```{R ploting2}
-plot1 <- (ggplot(working_df 
-%>% filter(labels %in% c("Affluent", "Poor")), aes(years, values, fill = categories))
-+ geom_bar(stat="identity")
-+ facet_wrap(~cancer_types, scale = "free")
+## Mortality rate plots
+
+### Sex plot
+
+```{R plot_poor_affluent_sex}
+plot_poor_affluent_sex <- (ggplot(working_df
+	%>% filter(labels %in% c("Affluent", "Poor") & grepl("Sex", grp_cat, ignore.case = TRUE))
+		, aes(x=years, y=values, colour = categories))
+	+ geom_point(alpha = 0.3)
+	+ geom_line(aes(group = categories, fill = categories), alpha = 0.3)
+	+ scale_colour_brewer(palette="Dark2")
+	+ scale_fill_brewer(palette="Dark2")
+	+ facet_wrap(cancer_types ~ labels, ncol = 4)
+	+ labs(x = "Years"
+			, y = "Cancer mortality rates per 100,000 population"
+			, title = "Sex"
+			, fill = "Sex"
+			, colour = "Sex"
+		)
+	+ theme(legend.position="bottom"
+		, plot.title = element_text(hjust = 0.5)
+	)
 )
-print(plot1)
+```
+
+### Race plot
+
+```{R plot_poor_affluent_race}
+plot_poor_affluent_Race <- (ggplot(working_df
+	%>% filter(labels %in% c("Affluent", "Poor") & grepl("Race", grp_cat, ignore.case = TRUE))
+		, aes(x=years, y=values, colour = categories))
+	+ geom_point(alpha = 0.3)
+	+ geom_line(aes(group = categories, fill = categories), alpha = 0.3)
+	+ scale_colour_brewer(palette="Dark2")
+	+ scale_fill_brewer(palette="Dark2")
+	+ facet_wrap(cancer_types ~ labels, ncol = 4)
+	+ labs(x = "Years"
+			, y = "    "
+			, title = "Race"
+			, fill = "Race"
+			, colour = "Race"
+		)
+	+ theme(legend.position="bottom"
+		, plot.title = element_text(hjust = 0.5)
+	)
+)
+```
+
+### Mortality rate plots showing the trends of the estimates for all the cancer types compared across sex and race.
+
+```{R, echo = FALSE}
+grid.arrange(plot_poor_affluent_sex, plot_poor_affluent_Race, ncol=2)
+```
+
+## Rate ratio plots
+
+### Sex plot
+
+```{R plot_sex}
+plot_sex <- (ggplot(temp_df
+	%>% filter(grepl("Sex", grp_cat, ignore.case = TRUE))
+		, aes(x=years, y=Rate_Ratio, colour = categories)) 
+	+ geom_point()
+	+ geom_ribbon(aes(ymin=lower, ymax=upper, group = categories, fill = categories), color = NA, alpha = 0.3)
+	+ facet_wrap(~cancer_types, ncol = 2)
+	+ scale_colour_brewer(palette="Dark2")
+	+ scale_fill_brewer(palette="Dark2")
+	+ labs(x = "Years"
+			, y = "Rate ratio of poor vs affluent counties (and 95% CI)"
+			, title = "Sex"
+			, fill = "Sex"
+			, colour = "Sex"
+		)
+	+ theme(legend.position="bottom"
+		, plot.title = element_text(hjust = 0.5)
+	)
+)
+```
+
+### Race plot
+
+```{R plot_race}
+plot_race <- (ggplot(temp_df
+	%>% filter(grepl("Race", grp_cat, ignore.case = TRUE))
+		, aes(x=years, y=Rate_Ratio, colour = categories)) 
+	+ geom_point()
+	+ geom_ribbon(aes(ymin=lower, ymax=upper, group = categories, fill = categories), color = NA, alpha = 0.3)
+	+ facet_wrap(~cancer_types, ncol = 2)
+	+ scale_colour_brewer(palette="Dark2")
+	+ scale_fill_brewer(palette="Dark2")
+	+ labs(x = "Years"
+			, y = "   "
+			, title = "Race"
+			, fill = "Race"
+			, colour = "Race"
+		)
+	+ theme(legend.position="bottom"
+		, plot.title = element_text(hjust = 0.5)
+	)
+)
+```
+
+### Rate ratio plots showing the ratio estimates together with confidence intervals for all the cancer types compared across sex and race.
+
+```{R, echo = FALSE}
+grid.arrange(plot_sex, plot_race, ncol=2)
 ```
