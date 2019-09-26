@@ -32,6 +32,7 @@ hw3.html: hw3.rmd
 ## Copy the final output to the Output dir
 move_output:
 	make hw2.html
+	make hw3.html
 	cp hw2.html HW2/
 
 clean: 
