@@ -46,7 +46,7 @@ theme_set(theme_bw() +
 > - In addition, from the Table, the cancer types are sex and race specific. Hence, I provided distinctive graphs for Sex and Race.
 >- Plot two categeories of graphs: 
 
-> > - **Mortality rate graphs**: Rates are per 100,000 population and age adjusted to the 2000 US standard population. The first set of Figures show trends in Mortality rates among the poor and the affluent for all the cancer types.
+> > - **Mortality rate graphs**: Rates are per 100,000 population and age adjusted to the 2000 US standard population. The first set of Figures show the estimatesin Mortality rates among the poor and the affluent for all the cancer types.
 > > - **Rate ratio**: unrounded rate in poor counties divided by the corresponding unrounded rate in affluent counties: These are shown in second set of plots. The confidence interval bands are also added around the estimates.
 
 ## The table extracted from [Siegel et. al](https://onlinelibrary.wiley.com/doi/pdfdirect/+ 10.3322/caac.21551).
@@ -164,6 +164,12 @@ working_df <- (working_df
 	%>% mutate(grp_cat = ifelse(grepl("races|Black|White", categories), "Race", "Sex"))
 )
 
+# Temporary data to plot Mortality rates
+temp_df1 <- (working_df
+	%>% mutate(categories = reorder(categories, values, FUN = function(x) -x[1]))
+	%>% mutate(cancer_types = reorder(cancer_types, values, FUN = function(x) -x[1]))
+)
+
 # Temporary data for CI ploting
 temp_df <- (working_df
 	%>% filter(grepl("lowe|upp|Rate", labels))
@@ -179,11 +185,10 @@ temp_df <- (working_df
 ### Sex plot
 
 ```{R plot_poor_affluent_sex}
-plot_poor_affluent_sex <- (ggplot(working_df
+plot_poor_affluent_sex <- (ggplot(temp_df1
 	%>% filter(labels %in% c("Affluent", "Poor") & grepl("Sex", grp_cat, ignore.case = TRUE))
-		, aes(x=years, y=values, colour = categories))
-	+ geom_point(alpha = 0.3)
-	+ geom_line(aes(group = categories, fill = categories), alpha = 0.3)
+		, aes(x=years, y=values, fill = categories))
+	+ geom_bar(stat = "identity", position = position_dodge(width = 0.7))
 	+ scale_colour_brewer(palette="Dark2")
 	+ scale_fill_brewer(palette="Dark2")
 	+ facet_wrap(cancer_types ~ labels, ncol = 4)
@@ -191,7 +196,6 @@ plot_poor_affluent_sex <- (ggplot(working_df
 			, y = "Cancer mortality rates per 100,000 population"
 			, title = "Sex"
 			, fill = "Sex"
-			, colour = "Sex"
 		)
 	+ theme(legend.position="bottom"
 		, plot.title = element_text(hjust = 0.5)
@@ -202,11 +206,10 @@ plot_poor_affluent_sex <- (ggplot(working_df
 ### Race plot
 
 ```{R plot_poor_affluent_race}
-plot_poor_affluent_Race <- (ggplot(working_df
+plot_poor_affluent_Race <- (ggplot(temp_df1
 	%>% filter(labels %in% c("Affluent", "Poor") & grepl("Race", grp_cat, ignore.case = TRUE))
-		, aes(x=years, y=values, colour = categories))
-	+ geom_point(alpha = 0.3)
-	+ geom_line(aes(group = categories, fill = categories), alpha = 0.3)
+		, aes(x=years, y=values, fill = categories))
+	+ geom_bar(stat = "identity", position = position_dodge(width = 0.7))
 	+ scale_colour_brewer(palette="Dark2")
 	+ scale_fill_brewer(palette="Dark2")
 	+ facet_wrap(cancer_types ~ labels, ncol = 4)
@@ -214,7 +217,6 @@ plot_poor_affluent_Race <- (ggplot(working_df
 			, y = "    "
 			, title = "Race"
 			, fill = "Race"
-			, colour = "Race"
 		)
 	+ theme(legend.position="bottom"
 		, plot.title = element_text(hjust = 0.5)
@@ -222,7 +224,7 @@ plot_poor_affluent_Race <- (ggplot(working_df
 )
 ```
 
-### Mortality rate plots showing the trends of the estimates for all the cancer types compared across sex and race.
+### Mortality rate plots showing the estimates for sex and race specific cancer types.
 
 ```{R, echo = FALSE}
 grid.arrange(plot_poor_affluent_sex, plot_poor_affluent_Race, ncol=2)
@@ -276,7 +278,7 @@ plot_race <- (ggplot(temp_df
 )
 ```
 
-### Rate ratio plots showing the ratio estimates together with confidence intervals for all the cancer types compared across sex and race.
+### Rate ratio plots showing the ratio estimates together with confidence intervals for sex and race specific cancer types.
 
 ```{R, echo = FALSE}
 grid.arrange(plot_sex, plot_race, ncol=2)
