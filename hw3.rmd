@@ -8,6 +8,15 @@ output:
 ---
 
 
+JD: It's a nice, ambitious attempt. I don't understand all of it, and I think you could have provided a lot more explanation. It's also hard to mark because the explanations are separated from the pictures by a lot of code.
+
+The rate plots for sex mostly don't show any detail because they're all very small compared to the total. Showing different types on the same scale has advantages and disadvantages, but I don't see any clear advantage to showing the total on the same scale.
+
+The rate plots for race cover a different list of causes than those for sex. No explanation is given for this. I don't like the extra bars for "all". These confuse the plots and provide little additional information.
+
+In the ratio plots, the "all" does provide additional information (since we're interested here in how ratios change through time). But the overlapping color scheme makes the graphs hard to decipher. The ratio of 1 here is extremely important, and I would suggest that it should be clearly indicated on the ratio plots.
+
+Grade: 2/3 (Good) 
 
 ```{R opts, warning = FALSE}
 
