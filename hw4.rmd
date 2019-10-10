@@ -79,7 +79,7 @@ if (length(dirs)>1 & sum(grepl(paste0(dirname, "$"), dirs, ignore.case = TRUE))=
 
 # The code below will automatically download the data from the specified url
 
-## Download the datasets and the labels
+# Download the datasets and the labels
 df_url <- "https://github.com/cran/addhazard/blob/master/data/nwtsco.rdata?raw=true"
 
 # Check if the dataset already exist
@@ -140,7 +140,6 @@ working_df <- (working_df
 	%>% setnames(as.character(var_desc$old_var), as.character(var_desc$new_var))
 )
 ```
-
 
 ## Model
 
