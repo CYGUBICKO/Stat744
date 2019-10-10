@@ -12,7 +12,6 @@ output:
 
 
 ```{R opts}
-
 # Set global options
 knitr::opts_chunk$set(echo = TRUE
    , warning = FALSE

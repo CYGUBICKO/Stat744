@@ -1,0 +1,13 @@
+old_var,new_var,description
+trel,time_to_relapse,"Time to relapse orlast date seen (yr), continuous"
+tsur,time_to_death,"Time to death or last date seen (yr), continuous"
+relaps,relapse,"Indicator of relapse, 0 = Alive no prior relapse when last seen, 1 = Relapsed after trel years"
+dead,death,"Indicator of death, 0 = Alive when last seen, 1 = Died after tsur years"
+study,study_cohort,"NWTS study, 3 = NWTS-3, 4 = NWTS-4"
+stage,disease_stage,"Stage of disease, 1=I, 2=II, 3=III, 4=IV"
+histol,central_path_histology,"Central Path histology, 0 = Favorable (FH), 1 = Unfavorable (UH)"
+instit,institutional_histology,"Institutional histology, 0 = Favorable (FH), 1 = Unfavorable (UH)"
+age,age_at_diagnosis,"Age at diagnosis (yr), continuous"
+yr,year_of_diagnosis,"Year of diagnosis, calendar year"
+specwgt,specimen_weight,"Weight of tumor bearing specimen, in grams (continuous)"
+tumdiam,tumor_diameter,"Diameter of tumor, in centimeters (continuous)"

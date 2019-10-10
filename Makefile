@@ -8,7 +8,6 @@ current: target
 ms = makestuff
 
 Sources += Makefile README.md
-Sources += nwtsco_var_description.csv
 
 ## Used by Steve to link data to right place
 Ignore += local.mk
@@ -18,6 +17,7 @@ Ignore += local.mk
 
 Sources += $(wildcard *.R *.rmd *.tex)
 Sources += images HW2 HW3 HW4
+Sources += nwtsco_var_description.csv
 
 Ignore += class_livecodes
 
