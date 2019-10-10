@@ -55,14 +55,14 @@ datatable(var_desc, rownames = FALSE)
 
 ## Scientific question
 
-- What are the prognostic factors associated with the survival of Wims Tumor patients?
-	- The aim is to is to evaluate the effects of prognostic factors on survival of the patients.
-	- We fit both Cox PH and generalized linear model
+- What are the prognostic factors associated with the death of Wims Tumor patients?
+	- The aim is to is to evaluate the effects of prognostic factors on death of the patients.
+		- To evaluate this, both Cox PH and and generalized linear models are fitted to the data
 
 
 ## Downloading data and some checks
 
-The script below will, if data doesn't exist in the local directory, automatically download the data and load it, otherwise load it.
+- The script below will, if data doesn't exist in the local directory, automatically download the data and load it, otherwise load it.
 
 
 ```{R download_df}
@@ -71,7 +71,7 @@ The script below will, if data doesn't exist in the local directory, automatical
 
 dirs <- list.dirs(".")
 dirname <- "HW4"
-if (length(dirs)>1 & sum(grepl(dirname, dirs, ignore.cas = TRUE))==0){
+if (length(dirs)>1 & sum(grepl(paste0(dirname, "$"), dirs, ignore.case = TRUE))==0){
 	dir.create(paste0("./", dirname))
 }
 
@@ -86,7 +86,7 @@ df_url <- "https://github.com/cran/addhazard/blob/master/data/nwtsco.rdata?raw=t
 pattern <- "nwtsco_data" # How is the dataset named in the computer?
 if(length(list.files("."))>0 & sum(grepl(pattern, list.files("."), ignore.case = TRUE))==1){
 	df_name <- grep(pattern, list.files(), value = T)
-	print("Reading dataset from your computer... \n")
+	cat("Reading dataset from your computer... \n")
 	working_df <- read.csv(df_name)
 	cat(df_name, " dataset already saved!!! We'll proceed to analysis.", "\n")
 } else {
@@ -107,7 +107,7 @@ if(length(list.files("."))>0 & sum(grepl(pattern, list.files("."), ignore.case =
 }
 ```
 
-Before modelling, we check the proportion of missingness in each of the variables. The table below summarizes the number, `no_miss` (and also expressed as proportions, `prop_miss`).
+- The proportion of missingness in each of the variables were checked and the table below summarizes the number the number of missingness, `no_miss` (and also expressed as proportions, `prop_miss`).
 	
 ```{R missingness}
 miss_df <- (sapply(working_df, function(x){sum(is.na(x) | x=="")})
@@ -125,7 +125,7 @@ if (sum(pull(miss_df, no_miss)) > 0){
 
 ## Data manipulation
 
-We scale quantitative predictors, re-factor `death` variable to `survival` and change variable names as defined in Table 1 above.
+- Quantitative predictors were scaled and variable names changes form `old_var` to `new_var` as defined in Table 1 above.
 
 ```{R data_manipulation}
 scaled_predictors <- names(working_df)[!names(working_df) %in% c("dead", "stage", "relaps", "study", "histol", "instit")]
@@ -144,19 +144,16 @@ working_df <- (working_df
 
 ## Model
 
-- We'll model linear effect of year and as such treat it as quantitative variable.
+- We fit both generalised linear model and Cox PH model inoder to evaluate the prognostic factors associated with survival of Wims Tumor patient.
+	- We model linear effect of year, hence treat it as quantitative variable.
+	- The survival variable is an indicator of death `(0 = Alive, 1 = Died)`.
 
 ### Generalised linear model
 
-- Although survival models maybe be best suited for this data, for this task, we will also fit generalized linear model (logistic model) to try and answer this question. In this case we are assuming that the followup times for all patient were the same and there are no censored data.
-- The survival variable is an indicator of death `(0 = Alive, 1 = Died)`. This will affect how we'll interprete the model output from logistic model i.e., how a given factor (predictor) increases/decreases the odds of dying as a result of tumor.
-	
-	- The other option would have been transforming `death` to `survival` but this won't be comparable to the result from survival model (treats death as event of interest occured).
-
-- In this model we treat all the predictor variables (of interest) as fixed effects. Model specification is shown below
+- Although survival models maybe be best suited for this data, for this task, a logistic model was also fitted. In this case we assumed that the followup times for all patient were the same and there were no censored data. Model specification is shown below
 
 ```
-	glm_model <- glm(death ~ year_of_diagnosis + age_at_diagnosis + 
+	logistic_model <- glm(death ~ year_of_diagnosis + age_at_diagnosis + 
 		specimen_weight + tumor_diameter + study_cohort + disease_stage +
 		central_path_histology + institutional_histology
 		, data = working_df
@@ -166,7 +163,7 @@ working_df <- (working_df
 
 
 ```{R model1, echo = FALSE}
-glm_model <- glm(death ~ year_of_diagnosis + age_at_diagnosis + specimen_weight + tumor_diameter + study_cohort + disease_stage + central_path_histology + institutional_histology
+logistic_model <- glm(death ~ year_of_diagnosis + age_at_diagnosis + specimen_weight + tumor_diameter + study_cohort + disease_stage + central_path_histology + institutional_histology
 	, data = working_df
 	, family = binomial
 )
@@ -174,7 +171,7 @@ glm_model <- glm(death ~ year_of_diagnosis + age_at_diagnosis + specimen_weight 
 
 ### Cox PH model
 
-- We fit a Cox PH model to examine how the given prognostic factors influence the rate of death happening given the survival time. The model specification is shown below
+- Suppose we now assume that the patients had not yet experienced the event of interest (death) within the study period, we fit a Cox PH model. Model specification is shown below
 
 ```
 	coxph_model <- coxph(Surv(time_to_death, death) ~ year_of_diagnosis + 
@@ -190,13 +187,20 @@ coxph_model <- coxph(Surv(time_to_death, death) ~ year_of_diagnosis + age_at_dia
 )
 ```
 
-Extract the model coefficients and plot
 
-- The coefficients are sorted by their values
+### Compare model estimates
+
+- The coefficient estimates (sorted by the point estimate) from each of the two models were extracted and compared as shown in the plot below.
+
+### Results and Conclusion
+
+- In both models, _central path histology,  disease stage_ and _year of diagnosis_ show strong (high effect size) association (in comparison to other remaing variables) with dying as a result of Wilms tumor. In particular,
+	- the odds (in the case of logistic model) or risk (hazard - in the case of Cox PH model) of dying as a result of Wilms tumor increases if the patient had unfavorable central path histology (as opposed to having favorable central path histology), stage IV, III or II cancer (as opposed to having stage I). On the other hand, patients who were diagnosed resently had lower odds or risk of dying.
+- The confidence interval for Cox PH model are slightly narrower as compared to logistic model.
 
 ```{R extract_coefs}
 # Extract coefs from the two models
-extract_coefs_df <- (map(list(glm = glm_model, coxph = coxph_model), tidy, conf.int = TRUE)
+extract_coefs_df <- (map(list(logistic = logistic_model, coxph = coxph_model), tidy, conf.int = TRUE)
 	%>% bind_rows(.id = "model")
 	%>% mutate(term = factor(term, levels = unique(term)))
 	%>% filter(term != "(Intercept)")
