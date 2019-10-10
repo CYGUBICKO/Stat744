@@ -31,6 +31,9 @@ hw2.html: hw2.rmd
 ## Homework 3
 hw3.html: hw3.rmd
 
+## Homework 4
+hw4.html: hw4.rmd
+
 ## Copy the final output to the Output dir
 move_output:
 	make hw2.html && cp hw2.html HW2/

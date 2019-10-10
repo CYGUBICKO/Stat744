@@ -1,0 +1,226 @@
+---
+title: 'STATS 744: Homework 4'
+author: "Steve Cygu"
+date: "`r format(Sys.time(), '%d %B %Y ')`"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+
+
+
+
+```{R opts}
+
+# Set global options
+knitr::opts_chunk$set(echo = TRUE
+   , warning = FALSE
+   , message = FALSE
+   , fig.width = 10
+   , fig.height = 8
+   , results = "asis")
+options(width = 12)
+
+## Install or load required packages
+library(dplyr, warn.conflicts = FALSE)
+library(tibble, warn.conflicts = FALSE)
+library(broom, warn.conflicts = FALSE)
+library(purrr, warn.conflicts = FALSE)
+
+library(data.table, warn.conflicts = FALSE)
+library(DT, warn.conflicts = FALSE)
+options(DT.options = list(pageLength = 15))
+
+library(ggplot2, warn.conflicts = FALSE)
+theme_set(theme_bw() + 
+	theme(panel.spacing=grid::unit(0,"lines")))
+
+library(dotwhisker, warn.conflicts = FALSE )
+library(ggstance, warn.conflicts = FALSE) ## horizontal geoms
+
+library(survival, warn.conflicts = FALSE)
+```
+
+
+
+## About the data
+
+This is a survival dataset from the National Wilms Tumor Study for the children with recurrent Wilms' Tumor following initial treatment. The patients were registered in either third (3) or fourth (4) study cohorts. For more information, kindly see [M. Kulich and D.Y. Lin](https://amstat.tandfonline.com/doi/abs/10.1198/016214504000000584?needAccess=true#aHR0cHM6Ly9hbXN0YXQudGFuZGZvbmxpbmUuY29tL2RvaS9wZGYvMTAuMTE5OC8wMTYyMTQ1MDQwMDAwMDA1ODQ/bmVlZEFjY2Vzcz10cnVlQEBAMA==). The table below describes the variables in the dataset.
+
+```{R, echo = FALSE}
+var_desc <- read.csv("nwtsco_var_description.csv")
+datatable(var_desc, rownames = FALSE)
+```
+
+## Scientific question
+
+- What are the prognostic factors associated with the survival of Wims Tumor patients?
+	- The aim is to is to evaluate the effects of prognostic factors on survival of the patients.
+	- We fit both Cox PH and generalized linear model
+
+
+## Downloading data and some checks
+
+The script below will, if data doesn't exist in the local directory, automatically download the data and load it, otherwise load it.
+
+
+```{R download_df}
+
+## ---- Create Output folder ----
+
+dirs <- list.dirs(".")
+dirname <- "HW4"
+if (length(dirs)>1 & sum(grepl(dirname, dirs, ignore.cas = TRUE))==0){
+	dir.create(paste0("./", dirname))
+}
+
+#### ---- Downloading the data ----
+
+# The code below will automatically download the data from the specified url
+
+## Download the datasets and the labels
+df_url <- "https://github.com/cran/addhazard/blob/master/data/nwtsco.rdata?raw=true"
+
+# Check if the dataset already exist
+pattern <- "nwtsco_data" # How is the dataset named in the computer?
+if(length(list.files("."))>0 & sum(grepl(pattern, list.files("."), ignore.case = TRUE))==1){
+	df_name <- grep(pattern, list.files(), value = T)
+	print("Reading dataset from your computer... \n")
+	working_df <- read.csv(df_name)
+	cat(df_name, " dataset already saved!!! We'll proceed to analysis.", "\n")
+} else {
+	# Download data
+	cat("Downloading dataset from ", df_url, "\n")
+	temp <- tempfile()
+	download.file(df_url, temp)
+	load(temp)
+	nwtsco_df <- nwtsco
+	unlink(temp)
+	write.csv(nwtsco_df, "nwtsco_data.csv", row.names = FALSE)
+	working_df <- nwtsco_df
+	cat(pattern
+		, " didn't exist!!! We've downloaded data from the url "
+		, df_url, "\n Dataset dim: "
+		, dim(nwtsco_df)
+	)
+}
+```
+
+Before modelling, we check the proportion of missingness in each of the variables. The table below summarizes the number, `no_miss` (and also expressed as proportions, `prop_miss`).
+	
+```{R missingness}
+miss_df <- (sapply(working_df, function(x){sum(is.na(x) | x=="")})
+	%>% data.frame()
+	%>% rownames_to_column("variables")
+	%>% setnames(c("."), c("no_miss"))
+	%>% mutate(`prop_miss (%)` = round(no_miss * 100/nrow(working_df), 2))
+)
+if (sum(pull(miss_df, no_miss)) > 0){
+		datatable(miss_df, rownames = FALSE)
+} else{
+	cat("\n No missing values in any of the variables \n")
+}
+```
+
+## Data manipulation
+
+We scale quantitative predictors, re-factor `death` variable to `survival` and change variable names as defined in Table 1 above.
+
+```{R data_manipulation}
+scaled_predictors <- names(working_df)[!names(working_df) %in% c("dead", "stage", "relaps", "study", "histol", "instit")]
+factor_predictors <- c("stage", "relaps", "study", "histol", "instit")
+working_df <- (working_df
+	%>% mutate_at(scaled_predictors, function(x){drop(scale(x))})
+	%>% mutate_at(factor_predictors, as.factor)
+	%>% mutate(stage = factor(stage, levels = c(1, 2, 3, 4), labels = c("I", "II", "III", "IV"))
+		, study = factor(study, levels = c(3, 4), labels = c("NWTS-3", "NWTS-4"))
+	)
+	%>% mutate_at(c("histol", "instit"), function(x){factor(x, levels = c(0,1), labels = c("Favorable", "Unfavorable"))})
+	%>% setnames(as.character(var_desc$old_var), as.character(var_desc$new_var))
+)
+```
+
+
+## Model
+
+- We'll model linear effect of year and as such treat it as quantitative variable.
+
+### Generalised linear model
+
+- Although survival models maybe be best suited for this data, for this task, we will also fit generalized linear model (logistic model) to try and answer this question. In this case we are assuming that the followup times for all patient were the same and there are no censored data.
+- The survival variable is an indicator of death `(0 = Alive, 1 = Died)`. This will affect how we'll interprete the model output from logistic model i.e., how a given factor (predictor) increases/decreases the odds of dying as a result of tumor.
+	
+	- The other option would have been transforming `death` to `survival` but this won't be comparable to the result from survival model (treats death as event of interest occured).
+
+- In this model we treat all the predictor variables (of interest) as fixed effects. Model specification is shown below
+
+```
+	glm_model <- glm(death ~ year_of_diagnosis + age_at_diagnosis + 
+		specimen_weight + tumor_diameter + study_cohort + disease_stage +
+		central_path_histology + institutional_histology
+		, data = working_df
+		, family = binomial
+	)
+```
+
+
+```{R model1, echo = FALSE}
+glm_model <- glm(death ~ year_of_diagnosis + age_at_diagnosis + specimen_weight + tumor_diameter + study_cohort + disease_stage + central_path_histology + institutional_histology
+	, data = working_df
+	, family = binomial
+)
+```
+
+### Cox PH model
+
+- We fit a Cox PH model to examine how the given prognostic factors influence the rate of death happening given the survival time. The model specification is shown below
+
+```
+	coxph_model <- coxph(Surv(time_to_death, death) ~ year_of_diagnosis + 
+		age_at_diagnosis + specimen_weight + tumor_diameter + study_cohort + 
+		disease_stage + central_path_histology + institutional_histology
+			, data = working_df
+	)
+```
+
+```{R model2, echo = FALSE}
+coxph_model <- coxph(Surv(time_to_death, death) ~ year_of_diagnosis + age_at_diagnosis + specimen_weight + tumor_diameter + study_cohort + disease_stage + central_path_histology + institutional_histology
+	, data = working_df
+)
+```
+
+Extract the model coefficients and plot
+
+- The coefficients are sorted by their values
+
+```{R extract_coefs}
+# Extract coefs from the two models
+extract_coefs_df <- (map(list(glm = glm_model, coxph = coxph_model), tidy, conf.int = TRUE)
+	%>% bind_rows(.id = "model")
+	%>% mutate(term = factor(term, levels = unique(term)))
+	%>% filter(term != "(Intercept)")
+	%>% mutate(term = reorder(term, estimate))
+)
+
+# Plot the model coefs
+pos <- ggstance::position_dodgev(height=0.5)
+compare_models_plot <- (ggplot(extract_coefs_df, aes(x = estimate, y = term, colour = model))
+	+ geom_point(position = pos)
+	+ ggstance::geom_linerangeh(aes(xmin = conf.low, xmax = conf.high), position = pos)
+	+ scale_colour_brewer(palette="Dark2"
+		, guide = guide_legend(reverse = TRUE)
+	) 
+	+ geom_vline(xintercept=0,lty=2)
+	+ labs(x = "Estimate"
+		, y = ""
+		, colour = "Model"
+		, title = "A comporison of model estimates for \n Cox PH and Logistic Model"
+	)
+	+ theme(plot.title = element_text(hjust = 0.5)
+		, text = element_text(size = 13)
+	)
+)
+print(compare_models_plot)
+```
+
