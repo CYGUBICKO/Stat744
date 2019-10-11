@@ -11,7 +11,7 @@
 
 <meta name="author" content="Steve Cygu" />
 
-<meta name="date" content="2019-10-10" />
+<meta name="date" content="2019-10-11" />
 
 <title>STATS 744: Homework 4</title>
 
@@ -2684,7 +2684,7 @@ $(document).ready(function () {
 
 <h1 class="title toc-ignore">STATS 744: Homework 4</h1>
 <h4 class="author">Steve Cygu</h4>
-<h4 class="date">10 October 2019</h4>
+<h4 class="date">11 October 2019</h4>
 
 </div>
 
@@ -2718,9 +2718,9 @@ library(ggstance, warn.conflicts = FALSE) ## horizontal geoms
 library(survival, warn.conflicts = FALSE)</code></pre>
 <div id="about-the-data" class="section level2">
 <h2>About the data</h2>
-<p>This is a survival dataset from the National Wilms Tumor Study for the children with recurrent Wilms’ Tumor following initial treatment. The patients were registered in either third (3) or fourth (4) study cohorts. For more information, kindly see <a href="https://amstat.tandfonline.com/doi/abs/10.1198/016214504000000584?needAccess=true#aHR0cHM6Ly9hbXN0YXQudGFuZGZvbmxpbmUuY29tL2RvaS9wZGYvMTAuMTE5OC8wMTYyMTQ1MDQwMDAwMDA1ODQ/bmVlZEFjY2Vzcz10cnVlQEBAMA==">M. Kulich and D.Y. Lin</a>. The table below describes the variables in the dataset.</p>
-<div id="htmlwidget-c38b7299e7b3632f0d88" style="width:100%;height:auto;" class="datatables html-widget"></div>
-<script type="application/json" data-for="htmlwidget-c38b7299e7b3632f0d88">{"x":{"filter":"none","data":[["trel","tsur","relaps","dead","study","stage","histol","instit","age","yr","specwgt","tumdiam"],["time_to_relapse","time_to_death","relapse","death","study_cohort","disease_stage","central_path_histology","institutional_histology","age_at_diagnosis","year_of_diagnosis","specimen_weight","tumor_diameter"],["Time to relapse orlast date seen (yr), continuous","Time to death or last date seen (yr), continuous","Indicator of relapse, 0 = Alive no prior relapse when last seen, 1 = Relapsed after trel years","Indicator of death, 0 = Alive when last seen, 1 = Died after tsur years","NWTS study, 3 = NWTS-3, 4 = NWTS-4","Stage of disease, 1=I, 2=II, 3=III, 4=IV","Central Path histology, 0 = Favorable (FH), 1 = Unfavorable (UH)","Institutional histology, 0 = Favorable (FH), 1 = Unfavorable (UH)","Age at diagnosis (yr), continuous","Year of diagnosis, calendar year","Weight of tumor bearing specimen, in grams (continuous)","Diameter of tumor, in centimeters (continuous)"]],"container":"<table class=\"display\">\n  <thead>\n    <tr>\n      <th>old_var<\/th>\n      <th>new_var<\/th>\n      <th>description<\/th>\n    <\/tr>\n  <\/thead>\n<\/table>","options":{"pageLength":15,"order":[],"autoWidth":false,"orderClasses":false,"lengthMenu":[10,15,25,50,100]}},"evals":[],"jsHooks":[]}</script>
+<p>This is a survival dataset from the National Wilms Tumor Study for the children with recurrent Wilms’ Tumor following initial treatment. For more information, kindly see <a href="https://amstat.tandfonline.com/doi/abs/10.1198/016214504000000584?needAccess=true#aHR0cHM6Ly9hbXN0YXQudGFuZGZvbmxpbmUuY29tL2RvaS9wZGYvMTAuMTE5OC8wMTYyMTQ1MDQwMDAwMDA1ODQ/bmVlZEFjY2Vzcz10cnVlQEBAMA==">M. Kulich and D.Y. Lin</a>. The table below describes the variables in the dataset.</p>
+<div id="htmlwidget-ce74c68491dbc1676e74" style="width:100%;height:auto;" class="datatables html-widget"></div>
+<script type="application/json" data-for="htmlwidget-ce74c68491dbc1676e74">{"x":{"filter":"none","data":[["trel","tsur","relaps","dead","study","stage","histol","instit","age","yr","specwgt","tumdiam"],["time_to_relapse","time_to_death","relapse","death","study_cohort","disease_stage","central_path_histology","institutional_histology","age_at_diagnosis","year_of_diagnosis","specimen_weight","tumor_diameter"],["Time to relapse orlast date seen (yr), continuous","Time to death or last date seen (yr), continuous","Indicator of relapse, 0 = Alive no prior relapse when last seen, 1 = Relapsed after trel years","Indicator of death, 0 = Alive when last seen, 1 = Died after tsur years","NWTS study, 3 = NWTS-3, 4 = NWTS-4","Stage of disease, 1=I, 2=II, 3=III, 4=IV","Central Path histology, 0 = Favorable (FH), 1 = Unfavorable (UH)","Institutional histology, 0 = Favorable (FH), 1 = Unfavorable (UH)","Age at diagnosis (yr), continuous","Year of diagnosis, calendar year","Weight of tumor bearing specimen, in grams (continuous)","Diameter of tumor, in centimeters (continuous)"]],"container":"<table class=\"display\">\n  <thead>\n    <tr>\n      <th>old_var<\/th>\n      <th>new_var<\/th>\n      <th>description<\/th>\n    <\/tr>\n  <\/thead>\n<\/table>","options":{"pageLength":15,"order":[],"autoWidth":false,"orderClasses":false,"lengthMenu":[10,15,25,50,100]}},"evals":[],"jsHooks":[]}</script>
 </div>
 <div id="scientific-question" class="section level2">
 <h2>Scientific question</h2>
