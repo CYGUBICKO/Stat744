@@ -45,7 +45,7 @@ library(survival, warn.conflicts = FALSE)
 
 ## About the data
 
-This is a survival dataset from the National Wilms Tumor Study for the children with recurrent Wilms' Tumor following initial treatment. The patients were registered in either third (3) or fourth (4) study cohorts. For more information, kindly see [M. Kulich and D.Y. Lin](https://amstat.tandfonline.com/doi/abs/10.1198/016214504000000584?needAccess=true#aHR0cHM6Ly9hbXN0YXQudGFuZGZvbmxpbmUuY29tL2RvaS9wZGYvMTAuMTE5OC8wMTYyMTQ1MDQwMDAwMDA1ODQ/bmVlZEFjY2Vzcz10cnVlQEBAMA==). The table below describes the variables in the dataset.
+This is a survival dataset from the National Wilms Tumor Study for the children with recurrent Wilms' Tumor following initial treatment. For more information, kindly see [M. Kulich and D.Y. Lin](https://amstat.tandfonline.com/doi/abs/10.1198/016214504000000584?needAccess=true#aHR0cHM6Ly9hbXN0YXQudGFuZGZvbmxpbmUuY29tL2RvaS9wZGYvMTAuMTE5OC8wMTYyMTQ1MDQwMDAwMDA1ODQ/bmVlZEFjY2Vzcz10cnVlQEBAMA==). The table below describes the variables in the dataset.
 
 ```{R, echo = FALSE}
 var_desc <- read.csv("nwtsco_var_description.csv")
