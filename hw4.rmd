@@ -39,6 +39,8 @@ library(dotwhisker, warn.conflicts = FALSE )
 library(ggstance, warn.conflicts = FALSE) ## horizontal geoms
 
 library(survival, warn.conflicts = FALSE)
+## BMB: I would suggest message=FALSE in the chunk options rather
+##  than individually setting warn.conflicts=FALSE in every library() call
 ```
 
 
@@ -107,6 +109,8 @@ if(length(list.files("."))>0 & sum(grepl(pattern, list.files("."), ignore.case =
 ```
 
 - The proportion of missingness in each of the variables were checked and the table below summarizes the number the number of missingness, `no_miss` (and also expressed as proportions, `prop_miss`).
+
+**BMB: you might look for packages/write some standard source code that does this kind of caching (so you don't have to copy/paste this code in all of your projects)**
 	
 ```{R missingness}
 miss_df <- (sapply(working_df, function(x){sum(is.na(x) | x=="")})
@@ -142,8 +146,8 @@ working_df <- (working_df
 
 ## Model
 
-- We fit both generalised linear model and Cox PH model inoder to evaluate the prognostic factors associated with survival of Wims Tumor patient.
-	- We model linear effect of year, hence treat it as quantitative variable.
+- We fit both generalised linear model and Cox PH model in order to evaluate the prognostic factors associated with the survival of Wims Tumor patients.
+	- We model linear effect of year, hence treat it as quantitative variable. (BMB: note this is linear on the *linear predictor* scale ...)
 	- The survival variable is an indicator of death `(0 = Alive, 1 = Died)`.
 
 ### Generalised linear model
@@ -159,12 +163,17 @@ working_df <- (working_df
 	)
 ```
 
+**BMB: why did you specify this and then fit it in a hidden code chunk? Seems redundant ...**
 
 ```{R model1, echo = FALSE}
 logistic_model <- glm(death ~ year_of_diagnosis + age_at_diagnosis + specimen_weight + tumor_diameter + study_cohort + disease_stage + central_path_histology + institutional_histology
 	, data = working_df
 	, family = binomial
 )
+```
+
+```{r}
+cloglog_model <- update(logistic_model, family=binomial(link="cloglog"))
 ```
 
 ### Cox PH model
@@ -179,6 +188,8 @@ logistic_model <- glm(death ~ year_of_diagnosis + age_at_diagnosis + specimen_we
 	)
 ```
 
+**BMB: ditto. Also, could avoid repeating the same formula (switching the response is a little tricky ...).**
+
 ```{R model2, echo = FALSE}
 coxph_model <- coxph(Surv(time_to_death, death) ~ year_of_diagnosis + age_at_diagnosis + specimen_weight + tumor_diameter + study_cohort + disease_stage + central_path_histology + institutional_histology
 	, data = working_df
@@ -190,6 +201,8 @@ coxph_model <- coxph(Surv(time_to_death, death) ~ year_of_diagnosis + age_at_dia
 
 - The coefficient estimates (sorted by the point estimate) from each of the two models were extracted and compared as shown in the plot below.
 
+**BMB: I think these models give results on DIFFERENT SCALES. The glm uses a logit link (results on log-odds scale), while the Cox PH uses a log-hazard link (results on log-hazard scale). If you want these results to actually be comparable, I think you need to use link="cloglog"; otherwise they might give similar results for small parameter values/baseline values near zero, but otherwise they'll diverge (I think)**
+
 ### Results and Conclusion
 
 - In both models, _central path histology,  disease stage_ and _year of diagnosis_ show strong (high effect size) association (in comparison to other remaing variables) with dying as a result of Wilms tumor. In particular,
@@ -198,7 +211,8 @@ coxph_model <- coxph(Surv(time_to_death, death) ~ year_of_diagnosis + age_at_dia
 
 ```{R extract_coefs}
 # Extract coefs from the two models
-extract_coefs_df <- (map(list(logistic = logistic_model, coxph = coxph_model), tidy, conf.int = TRUE)
+extract_coefs_df <- (map(list(logistic = logistic_model, coxph = coxph_model,
+                              cloglog=cloglog_model), tidy, conf.int = TRUE)
 	%>% bind_rows(.id = "model")
 	%>% mutate(term = factor(term, levels = unique(term)))
 	%>% filter(term != "(Intercept)")
@@ -217,7 +231,7 @@ compare_models_plot <- (ggplot(extract_coefs_df, aes(x = estimate, y = term, col
 	+ labs(x = "Estimate"
 		, y = ""
 		, colour = "Model"
-		, title = "A comporison of model estimates for \n Cox PH and Logistic Model"
+		, title = "A comparison of model estimates for \n Cox PH and Logistic Model"
 	)
 	+ theme(plot.title = element_text(hjust = 0.5)
 		, text = element_text(size = 13)
@@ -225,4 +239,6 @@ compare_models_plot <- (ggplot(extract_coefs_df, aes(x = estimate, y = term, col
 )
 print(compare_models_plot)
 ```
+
+**BMB: do you actually have any censoring in your data?  How much? How is censoring coded in the coxph() model anyway? CoxPH and cloglog don't actually agree exactly (although they're closer). Score: 2**
 
