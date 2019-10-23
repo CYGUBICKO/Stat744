@@ -1,0 +1,86 @@
+\documentclass[12pt]{article}
+\renewcommand{\baselinestretch}{1}
+\usepackage{float,amsthm,amssymb,amsfonts,cite,setspace}
+\usepackage{graphicx,graphics}
+\usepackage{amsmath}
+\usepackage{mathtools}
+%\usepackage{figure}
+\DeclareMathOperator*{\maxi}{min}
+\usepackage{subcaption}
+\usepackage{epsfig}
+\usepackage{cite}
+
+%\usepackage[marginparsep=25pt]{geometry} 
+%\usepackage{blindtext} 
+%\usepackage{marginnote} 
+%\usepackage{xcolor} 
+
+
+\usepackage{hyperref}
+\hypersetup{colorlinks=true}
+\usepackage[numbers]{natbib}
+%\def\R{{\mathcal R}}
+\def\E{{\mathcal E}}
+\newtheorem{theorem}[subsubsection]{Theorem}
+\newtheorem{remark}[subsubsection]{Remark}
+\newtheorem{lemma}[subsubsection]{Lemma}
+\newtheorem{definition}{Definition}
+\newtheorem{proposition}{Proposition}
+\newcommand{\reals}{\mathbb{R}}
+\providecommand{\abs}[1]{\lvert#1\rvert}
+\providecommand{\norm}[1]{\lVert#1\rVert}
+\def\R{{\mathcal R}}
+\setlength{\topmargin}{-0.3in}
+\setlength{\topskip}{0.1in}
+\setlength{\textheight}{9.2in}
+\setlength{\oddsidemargin}{0.1in}
+\setlength{\evensidemargin}{0.1in}
+\setlength{\textwidth}{6.3in}
+
+%\newcommand\KeyWord[1]{%
+%  \marginnote{\parbox[t]{\marginparwidth}{\raggedright\small{#1}}}}
+%\reversemarginpar 
+
+%\newcommand{\KW}[1]{%
+%  \par % ensure vertical mode
+%  \leavevmode % start a paragraph
+%  {\setbox0=\lastbox}% remove the indentation box
+%  \makebox[0pt][r]{\textbf{#1}}% print the keyword
+%  %\hspace*{\parindent}% add the parindent
+%  %\ignorespaces
+%}
+
+
+\begin{document}
+%\begin{linenumbers}
+\title{\textbf{Incorporating geospatial information to explore the relationship between quality of services and distance from service points}}
+\author{By Steve Cygu}\\
+\date{\today}
+\maketitle
+
+\section*{Introduction}
+
+There is a growing access to and amount of data being collected everyday by various organizations, for example, medical, business or health-demographic surveillance system datasets. These datasets are not only complex and large but also of high dimension. Most organizations continuously collect these dataset without predefined plan of how to explore the in real-time or after data collection. Data in its natural form of the table can be simple to understand as long as it is short, otherwise, some kind of data visualizations are the ideal way to communicate and identify complex relation between various variables in the data. Owing to this challenges, this project aims to incorporate geospatial information from Nairobi Health and Demographic Surveillance System (NUHDSS) data to explore the distribution of water, sanitation and hygiene (WaSH) indicators in relation to Euclidean distances from major service providers (such as water and garbage collection points). In addition, the project will provide a dynamic visualization platform in the form of \textit{R shiny} as a tool to explore such data.
+
+
+\section*{Objectives}
+
+\begin{itemize}
+\item[1.] Explore the relationship between household distance to/from service points and quality of services over time
+\item[2.] Build \textit{R shiny} dashboard to dynamically visualize such trends
+\end{itemize}
+
+\section*{Dataset}
+
+The data was collected during the period 2003-2015 from the Nairobi Urban Health and Demographic Surveillance System (NUHDSS). The data is from the Korogocho and Viwandani slum settlements of Nairobi to enable investigation of the linkages between urban poverty, health, demographic and other socio-economic outcomes, and facilitate the evaluation of interventions implemented by government and other development partners to improve the wellbeing of the urban poor. 
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%\newpage
+%\bibliographystyle{unsrt}
+%\bibliographystyle{plainnat}
+%\bibliography{steve_proposal.bib}
+\end{document}
+
+
+

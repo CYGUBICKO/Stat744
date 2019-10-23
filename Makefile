@@ -39,6 +39,8 @@ hw4.html: hw4.rmd
 move_output:
 	make hw4.html && cp hw4.html HW4/
 
+steve_proposal.pdf: steve_proposal.tex
+
 clean: 
 	rm -f *Rout.*  *.Rout .*.RData .*.Rout.* .*.wrapR.* .*.Rlog *.RData *.wrapR.* *.Rlog *.rdeps *.rda .*.rdeps .*.rda *.vrb *.toc *.out *.nav *.snm *.log *.aux
 
