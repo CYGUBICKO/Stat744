@@ -16,7 +16,7 @@ Ignore += local.mk
 ######################################################################
 
 Sources += $(wildcard *.R *.rmd *.tex)
-Sources += images HW2 HW3 HW4
+Sources += images HW2 HW3 HW4 HW5 funs
 Sources += nwtsco_var_description.csv arifu_sms_data.csv Maize_Content_Map.pdf 
 
 Ignore += class_livecodes
