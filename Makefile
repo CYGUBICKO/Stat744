@@ -17,7 +17,7 @@ Ignore += local.mk
 
 Sources += $(wildcard *.R *.rmd *.tex)
 Sources += images HW2 HW3 HW4
-Sources += nwtsco_var_description.csv
+Sources += nwtsco_var_description.csv arifu_sms_data.csv Maize_Content_Map.pdf 
 
 Ignore += class_livecodes
 
@@ -35,9 +35,12 @@ hw3.html: hw3.rmd
 ## Homework 4
 hw4.html: hw4.rmd
 
+## Homework 5
+hw5.html: hw5.rmd
+
 ## Copy the final output to the Output dir
 move_output:
-	make hw4.html && cp hw4.html HW4/
+	make hw5.html && cp hw5.html HW5/
 
 steve_proposal.pdf: steve_proposal.tex
 
