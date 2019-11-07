@@ -56,6 +56,8 @@ In 2015, [Arifu Kenya](https://www.arifu.com/) conducted a pilot study of about 
 
 - See content map [here](Maize_Content_Map.pdf)
 
+JD: It looks like we only have the narrative content map
+
 The variables in the dataset are described in the table below:
 
 Variable	|	Description
@@ -247,3 +249,7 @@ reff_plot
 
 - Arifu should embrace a Kiswahili with a Narrative based plotform inoder to get more replies from the farmers.
 
+
+JD: I don't see any good dataviz here. The histograms are very hard to read. The coefplot is clear enough, but not a good way to show the result. An interaction plot would be nice. It's not clear why you show the random effects at all. Your interpretation doesn't relate to the baseline: languageSwahili is negative in the fact-based context only, for example. You should avoid that kind of compound R label in nice plots.
+
+Grade 1.7/3 (OK)
