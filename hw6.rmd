@@ -8,16 +8,13 @@ output:
 ---
 
 
-
-
-
 ```{R opts, message = FALSE}
 # Set global options
 knitr::opts_chunk$set(echo = TRUE
    , warning = FALSE
    , message = FALSE
-#  , fig.width = 10
-#  , fig.height = 8
+	, fig.width = 10
+	, fig.height = 10
    , results = "asis")
 options(width = 12)
 
@@ -25,225 +22,155 @@ options(width = 12)
 library(dplyr)
 library(tibble)
 library(DT)
-
-library(reshape2)
-library(lme4)
+library(data.table)
 
 library(ggplot2)
 theme_set(theme_bw() + 
 	theme(panel.spacing=grid::unit(0,"lines")))
 
-library(ggpubr)
+library(scales)
+library(gifski)
+library(gganimate)
 
-## Source function from funs dir
+## Source helper functions from funs dir
 source("funs/globalFuns.R")
 ```
 
 
 
-## About the problem data
+## About the data
 
-In 2015, [Arifu Kenya](https://www.arifu.com/) conducted a pilot study of about `4000` small holder farmers in Kenya. In this pilot they conducted two experiments to test the best language to increase uptake and usage of their short messaging service (SMS) platform for about 5 months:
+This a five-year survival rates data for the patients of various Cancer types in the US from $1963$ to $2013$. The data was published by the US National Cancer Institute and downloaded from [Data World](https://data.world/makeovermonday/2018w40-five-year-cancer-survival-rates-in-america).
 
-- They randomly assigned learners to receive two types of SMS invitation messages
-- They randomly assigned learners who engaged to interact with "Narrative" vs. "Fact-Based" versions of content
-
-- Each `in-coming` and `out-going` message has its own column. All interactions are tagged with a code that indicates which versions learners engaged with. The number / letter at the end of the `program_code` indicates what invitation messaging they received and which content they accessed. i.e.
-	- MAIZE1 = Invitation 1 \& Fact-Based Content
-	- MAIZE1-N = Invitation 1 \& Narrative Content
-	- MAIZE2 = Invitation 2 \& Fact-Based Content
-	- MAIZE2-N = Invitation 2 \& Narrative Content
-
-- See content map [here](Maize_Content_Map.pdf)
-
-The variables in the dataset are described in the table below:
-
-Variable	|	Description
---------	|	-----------
-user_id	|	User identifier
-program_code	|	Invitation messaging
-message_in	|	User typed in message
-message_out | System generated message
-origin | Either user or system
-created_at	| Date created
 
 ## Aim
 
-- Investigate the effect of language on the uptake and usage of their SMS platform
+- Show trends in cancer survival over the five-year periods
+	- By gender
+	- By race
 
-## Data manipulation
-
+## Download and load data
 
 ```{R}
 
 ## Create output directory
-createDir(dirname = "HW5", dirpath = ".")
+createDir(dirname = "HW6", dirpath = ".")
 
-## Load data
-raw_df <- read.csv("arifu_sms_data.csv")
-str(raw_df)
+## Load/download data
+url = "https://query.data.world/s/idhkwmkwynt4n4jlgmkslf43c5pd24"
+raw_df <- downloadDf(filename = "cancer_survival_rates_usa"
+	, filetype = "csv"
+	, df_url = url
+)
 ```
 
-- Generate new column `message_in_out` to sequencially show the sent and received SMS and then spread by `origin` and fill by `message_in_out`  to have sent-received SMS side by side.
+**Variables**
+
+- The table below summarizes the variables in the dataset
 
 ```{R}
+df_summary <- (raw_df
+	%>% mutate_at("Year", as.factor)
+	%>% summarizeDf()
+	%>% setnames("Summary", "Summary ([min, max]; mean (sd) / label(%))")
+)
+datatable(df_summary, rownames = FALSE)
+```
+
+**Cleaning**
+
+- Drop all categories containing all the other subcategories:
+	- All races
+	- total
+	- All cancers
+- Rename the variables
+- Drop cases with missing survival rates
+
+```{R}
+# To plot overall cancer survival for all cancer types
+raw_df <- (raw_df
+	%>% filter(!is.na(Survival.Rate))
+	%>% setnames(names(.), tolower(gsub("\\.", "_", names(.))))
+)
+
+# To plot cancer survival rates by race and gender
 working_df <- (raw_df
-	%>% filter(!is.na(user_id)|user_id!="")
-	%>% mutate_at(c("message_in", "message_out"), as.character)
-	%>% mutate(message_in_out = ifelse(message_out=="", message_in, message_out))
-	%>% group_by(origin)
-	%>% mutate(cn=1:n()
-		, created_at = as.POSIXct(as.character(created_at),  format = "%Y-%m-%d %H:%M:%S")
-	)
-	%>% ungroup()
-	%>% data.frame()
-	%>% reshape2::dcast(user_id + program_code + created_at + cn~origin, value.var = "message_in_out")
+	%>% filter(!grepl("^All", race) & !grepl("All", cancer_type) & !grepl("total", gender))
 )
 ```
 
-**Manipulations**
+## Visualization
 
-- Create user `language` variable i.e., the system sent SMS with the following `program_code` tags:
-	- Swahili: *MAHINDI
-	- English: *MAIZE
-- Create `content` variable. Each language could have Fact Based or Content based content:
-	- See definition in `About data`
-- Calculate amount of time, `duration`, taken by the respondent to respond to all SMS
-- Calculate the total number of replies sent by each users.
-- The text which starts with "I'm Arifu. Reply..." or "Naitwa Arifu. Jibu kwa..." triggers the conversion (first SMS from Arifu) so time difference starts from that and it has `duration = 0`. All the trigger cases are dropped. 
-- Count the number of SMS `num_sms` (number sent) by each respondent (count sms loop per respondent) after the trigger per `user_id` per `program_code`
-- Gather all the calculated information per respondent
+**Overall Cancer Survival**
+
+- The plot below shows the overall five-year cancer survival rates in the US. The rates disregards gender and race segregation.
+- Generally, prostrate, thyroid, skin, and breast cancer have the highest survival rates while pancreas, liver, lung and esophagus have the lowest.
 
 ```{R}
-#difffunc <- function(x){
-#	diffs <- numeric(length(x))
-#	for (i in 1:length(x)-1){
-#		diffs[i] <- ifelse(i==1, 0, difftime(x[i+1], x[i], units = "mins"))
-#	}
-#	return(diffs)
-#}
-working_df <- (working_df
-	%>% mutate(language = ifelse(grepl("^MAIZE", program_code), "English", "Swahili")
-		, content = ifelse(grepl("-N$", program_code), "Narrative based", "Fact based")
+overall_df <- (raw_df
+	%>% filter(grepl("^All", race) & grepl("total", gender) & !grepl("^All", cancer_type))
+	%>% group_by(year)
+	%>% mutate(ranking = min_rank(-survival_rate))
+)
+
+plot1 <- (ggplot(overall_df, aes(ranking, group = cancer_type, colour = cancer_type, fill = cancer_type))
+	+ geom_tile(aes(y = survival_rate/2, height  = survival_rate, width = 0.9), colour = NA)
+	+ geom_text(aes(y = 0, label = paste0(cancer_type, " ")), vjust = 0.2, hjust = 1)
+	+ geom_text(aes(y = survival_rate, label = paste0(" ", percent(survival_rate)), hjust = 0))
+	+ coord_flip(clip = "off", expand = TRUE)
+	+ scale_x_reverse()
+	+ scale_color_viridis_d(name="")
+	+ scale_fill_viridis_d(name="")
+	+ guides(color = FALSE, fill = FALSE)
+	+ theme_minimal()
+	+ theme(plot.title = element_text(hjust = 0.5, face = "bold", colour = "grey")
+		, axis.ticks.y = element_blank()
+		, axis.text.y = element_blank()
+		, plot.margin = margin(1,1,1,4, "cm")
 	)
-	%>% group_by(user_id, program_code)
-	%>% mutate(duration = difftime(max(created_at), min(created_at), units = "mins"))
-	%>% filter(!grepl("^Naitwa Arifu. Jibu kwa|I'm Arifu. Reply with a", system))
-	%>% mutate(num_sms = n())
-)
-
-# Select key calculated variables foe summary
-working_df <- (working_df
-	%>% ungroup()
-	%>% select(c("user_id", "language", "content", "num_sms"))
-	%>% mutate(lang_content = paste0(language, " - ", content))
-	%>% distinct()
-)
-datatable(head(working_df), rownames = FALSE)
-```
-
-**Observation**
-
-- One user could receive:
-	- both swahili and english content
-	- both fact-based and narrative-based
-	- The languages can either be fact based or narrative-based
-
-**Visualization**
-
-- We sum the number of replies by each user and then visualize.
-- From the plot below, in general, English content have less replies as compared to Swahili content. This is the same to Fact based versus Narrative based content (less replies for Fact based). In addition, a Swahili Narrative based content is more likely to have less replies as compared to English based narative.
-
-
-
-
-```{R}
-plot_df <- (working_df
-	%>% select(-lang_content)
-	%>% group_by(user_id)
-	%>% mutate(num_sms2 = sum(num_sms))
-	%>% distinct()
-)
-base_plot <- (ggplot(plot_df, aes(x = num_sms2, fill = content))
-	+ geom_histogram(alpha=0.5, stats= "dodge")
-	+ facet_wrap(~language)
-	+ labs(x = "Number of SMS replied to by farmer"
-		, y = "Count"
-		, fill = "Content"
-		, colour = "Type of content"
+	+ transition_states(states = year, transition_length = 4, state_length = 1)
+	+ ease_aes("cubic-in-out")
+	+ labs(title = "Cancer survival rate per Year : {closest_state}"
+		, x = ""
+		, y = "Survival rate"
 	)
 )
-print(base_plot)
-```
-
-**Modeling**
-
-- Each user could respond to more than one program (lang_content/program_code). So, we aggregated our data to number of sms per user per language per content type.
-- We fit a poisson generalised linear mixed effect model to estimate the effect of language and content type on number of replies (`num_sms`) with a `user_id` (farmer) random intercept.
-
-```{R}
-sms_model <- glmer(num_sms ~ language*content + (1|user_id)
-	, data = working_df
-	, family = poisson(link = "log")
+animate(plot1
+	, nframes = 100
+	, fps = 20
+	, width = 950
+	, height = 750
+	, end_pause = 10
 )
+anim_save("csurvival_overall.gif", plot1)
 ```
 
-## Results
+**Cancer Survival by Gender and Race**
 
-**Fixed and random effects**
-
-- Only a sample of $15$ individuals are shown in random effect plot
-- From the Figures below:
-	- There is an individual level variation in regards to language and type of content they receive the SMS through on number of replies they give
-	- There is a positive effect of deliveling a Swahili narrative based content on number of replies the farmers will give
-	- However, there is a negative effect of delivering Swahili SMS and narrative based, individually, on the number of responses made by the farmers
+- The figure below shows the cancer survival rates compared across race and gender.
 
 
 ```{R}
-coefs_df <- (broom.mixed::tidy(sms_model, effects=c("fixed", "ran_pars", "ran_vals"), conf.int = TRUE)
-	%>% mutate(term = factor(term, levels = unique(term)))
-	%>% mutate(term = reorder(term, estimate))
+plot2 <- (ggplot(working_df, aes(x = year, y = survival_rate, colour = cancer_type, group = cancer_type))
+	+ geom_line()
+	+ scale_x_continuous(breaks = seq(1963, 2013, 10))
+	+ scale_y_continuous(labels = percent)
+	+ geom_point()
+	+ geom_text(aes(y = survival_rate, label = cancer_type))
+	+ scale_color_viridis_d(name="")
+	+ facet_grid(gender ~ race)
+	+ transition_reveal(year)
+	+ theme(legend.position="none")
 )
-feff_df <- (coefs_df
-	%>% filter(term != "(Intercept)")
+animate(plot2
+	, nframes = 100
+	, fps = 20
+	, width = 950
+	, height = 750
+	, end_pause = 10
 )
-
-# Fixed effects
-pos <- ggstance::position_dodgev(height=0.5)
-feff_plot <- (ggplot(feff_df, aes(x = estimate, y = term))
-	+ geom_point(position = pos)
-   + ggstance::geom_linerangeh(aes(xmin = conf.low, xmax = conf.high), position = pos)
-   + scale_colour_brewer(palette="Dark2"
-		, guide = guide_legend(reverse = TRUE)
-   )
-   + geom_vline(xintercept=0,lty=2)
-   + labs(x = "Estimate", y = "")
-	+ theme(text = element_text(size = 13))
-)
-
-# Random effects
-n_indiv <- 15
-reff_df <- (coefs_df
-	%>% filter(term == "(Intercept)" & effect == "ran_vals")
-	%>% sample_n(n_indiv)
-	%>% mutate(term = level)
-)
-reff_plot <- feff_plot %+% reff_df
+anim_save("csurvival_racegender.gif", plot2)
 ```
 
-**Fixed effect**
 
-```{R, echo = FALSE}
-feff_plot
-```
-
-**Random effect**
-
-```{R, echo = FALSE}
-reff_plot
-```
-
-## Conclusion
-
-- Arifu should embrace a Kiswahili with a Narrative based plotform inoder to get more replies from the farmers.
 

@@ -43,7 +43,7 @@ hw6.html: hw6.rmd
 
 ## Copy the final output to the Output dir
 move_output:
-	make hw5.html && cp hw5.html HW5/
+	make hw6.html && cp hw6.html HW6/
 
 steve_proposal.pdf: steve_proposal.tex
 
