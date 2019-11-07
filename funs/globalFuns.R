@@ -60,36 +60,36 @@ summarizeDf <- function(df, output = c("simple", "tex"), digits = 1){
 	if (!missing(output) & sum(!output %in% c("simple", "tex")) > 0){
 		stop("output can only be 'simple' or 'tex'")
 	}
-  	vars <- colnames(df)
-  	df_summary <- data.frame(Variable = rep(NA, length(vars))
-   	, Type = rep(NA, length(vars))
-   	, Summary = rep(NA, length(vars))
+	vars <- colnames(df)
+	df_summary <- data.frame(Variable = rep(NA, length(vars))
+		, Type = rep(NA, length(vars))
+		, Summary = rep(NA, length(vars))
 	)
   	for (i in 1:length(vars)){
 		vals <- df[, vars[[i]]]
-    	if (class(vals) == "numeric" | class(vals) == "integer"){
+		if (class(vals) == "numeric" | class(vals) == "integer"){
 			df_summary[["Type"]][[i]] <- "numeric"
-      	df_summary[["Variable"]][[i]] <- vars[[i]]
-      	df_summary[["Summary"]][[i]] <- paste0("["
+			df_summary[["Variable"]][[i]] <- vars[[i]]
+			df_summary[["Summary"]][[i]] <- paste0("["
 				, round(min(vals, na.rm = TRUE), digits), ", "
 				, round(max(vals, na.rm = TRUE), digits), "]; "
-        		, round(mean(vals, na.rm = TRUE), digits), " ("
+				, round(mean(vals, na.rm = TRUE), digits), " ("
 				, round(sd(vals, na.rm = TRUE), digits), ")"
 			)
 		} else{
 			df_summary[["Type"]][[i]] <- "categorical"
-      	df_summary[["Variable"]][[i]] <- vars[[i]]
-      	perc <- sort(round(prop.table(table(vals))*100, digits)
+			df_summary[["Variable"]][[i]] <- vars[[i]]
+			perc <- sort(round(prop.table(table(vals))*100, digits)
 				, decreasing = TRUE
 			)
-      	if (missing(output) | sum(output %in% "simple") > 0){
+			if (missing(output) | sum(output %in% "simple") > 0){
 				perc <- paste0(names(perc), " (", perc, "%)")
 				df_summary[["Summary"]][[i]] <- paste0(perc
 					, collapse = "; \n"
 				)
 			} else{
-        		perc <- paste0(names(perc), " (", perc, "\\%)")
-        		df_summary[["Summary"]][[i]] <- paste0(perc
+				perc <- paste0(names(perc), " (", perc, "\\%)")
+				df_summary[["Summary"]][[i]] <- paste0(perc
 					, collapse = "; \\\\  & & "
 				)
 			}
