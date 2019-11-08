@@ -165,8 +165,6 @@ plot2 <- (ggplot(working_df, aes(x = year, y = survival_rate, colour = cancer_ty
 animate(plot2
 	, nframes = 100
 	, fps = 20
-	, width = 950
-	, height = 750
 	, end_pause = 10
 )
 anim_save("csurvival_racegender.gif", plot2)
