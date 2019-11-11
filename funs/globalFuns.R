@@ -35,7 +35,8 @@ downloadDf <- function(filename, filetype, df_url){
 		cat(filename
 			, " didn't exist!!! We've downloaded data from the url "
 			, df_url, "\n Dataset dim: "
-			, dim(temp_df)
+                        , dim(temp_df)
+                        , "\n"
 		)
 	}
 	return(working_df)

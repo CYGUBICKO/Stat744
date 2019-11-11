@@ -40,7 +40,7 @@ source("funs/globalFuns.R")
 
 ## About the data
 
-This a five-year survival rates data for the patients of various Cancer types in the US from $1963$ to $2013$. The data was published by the US National Cancer Institute and downloaded from [Data World](https://data.world/makeovermonday/2018w40-five-year-cancer-survival-rates-in-america).
+This is a data set on five-year survival rates for the patients with various Cancer types in the US from $1963$ to $2013$. The data was published by the US National Cancer Institute and downloaded from [Data World](https://data.world/makeovermonday/2018w40-five-year-cancer-survival-rates-in-america).
 
 
 ## Aim
@@ -104,13 +104,19 @@ working_df <- (raw_df
 **Overall Cancer Survival**
 
 - The plot below shows the overall five-year cancer survival rates in the US. The rates disregards gender and race segregation.
-- Generally, prostrate, thyroid, skin, and breast cancer have the highest survival rates while pancreas, liver, lung and esophagus have the lowest.
+- Generally, prostate, thyroid, skin, and breast cancer have the highest survival rates while pancreas, liver, lung and esophagus have the lowest.
 
 ```{R}
 overall_df <- (raw_df
 	%>% filter(grepl("^All", race) & grepl("total", gender) & !grepl("^All", cancer_type))
 	%>% group_by(year)
-	%>% mutate(ranking = min_rank(-survival_rate))
+  %>% mutate(ranking = min_rank(-survival_rate))
+)
+
+ord_vals <- (raw_df
+  %>% filter(year==min(year))
+  %>% arrange(survival_rate)
+  %>% pull(cancer_type)
 )
 
 plot1 <- (ggplot(overall_df, aes(ranking, group = cancer_type, colour = cancer_type, fill = cancer_type))
@@ -118,9 +124,10 @@ plot1 <- (ggplot(overall_df, aes(ranking, group = cancer_type, colour = cancer_t
 	+ geom_text(aes(y = 0, label = paste0(cancer_type, " ")), vjust = 0.2, hjust = 1)
 	+ geom_text(aes(y = survival_rate, label = paste0(" ", percent(survival_rate)), hjust = 0))
 	+ coord_flip(clip = "off", expand = TRUE)
-	+ scale_x_reverse()
-	+ scale_color_viridis_d(name="")
-	+ scale_fill_viridis_d(name="")
+  + scale_colour_discrete_qualitative()
+  + scale_fill_discrete_qualitative()
+  ## + scale_color_viridis_d(name="")
+  ## + scale_fill_viridis_d(name="")
 	+ guides(color = FALSE, fill = FALSE)
 	+ theme_minimal()
 	+ theme(plot.title = element_text(hjust = 0.5, face = "bold", colour = "grey")
@@ -144,6 +151,8 @@ animate(plot1
 )
 anim_save("csurvival_overall.gif", plot1)
 ```
+
+**BMB: this is an elegant way to make this popular kind of animated barchart. Why did you pick viridis for the colour scale (this is a completely nominal scale, there's no particular order to the colours)?  Or, if you were going to use an ordered colour scale, why did you order alphabetically (you could for example have ordered by survival rank at the beginning of the time series)? I would also consider using a "scarier" colour scale for survival rates (e.g. blue for high survival, red for low survival, or white to red)**
 
 **Cancer Survival by Gender and Race**
 
@@ -169,6 +178,13 @@ animate(plot2
 )
 anim_save("csurvival_racegender.gif", plot2)
 ```
+
+**BMB: same issue with colours/ordering as above.
+This plot is a little overwhelming. Maybe there's some other 
+way to subdivide it, or avoid having all the labels in every plot?
+What about axis labels? e.g. "survival_rate" should probably be "5-year survival rate".  Score: 2.1 (technically nice, but could have spent more effort describing the presentation choices)**
+
+
 
 
 
